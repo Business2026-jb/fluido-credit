@@ -1,11 +1,11 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.titan.email",
-  port: 465,
-  secure: true,
+  host: process.env.SMTP_HOST || "smtp.titan.email",
+  port: Number(process.env.SMTP_PORT || 465),
+  secure: process.env.SMTP_SECURE === "true",
   auth: {
-    user: "user@fluidocredit.com",
+    user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
 });
