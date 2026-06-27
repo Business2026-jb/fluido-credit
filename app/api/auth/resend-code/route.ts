@@ -44,7 +44,8 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendVerificationEmail(normalizedEmail, user.fullName, code);
+    console.log("FLUIDO VERIFICATION CODE:", code);
+// await sendVerificationEmail(normalizedEmail, fullName, code);
 
     return NextResponse.json({ message: "New verification code sent." });
   } catch (error) {

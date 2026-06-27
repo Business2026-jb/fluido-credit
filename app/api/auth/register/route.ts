@@ -85,7 +85,8 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendVerificationEmail(normalizedEmail, fullName, code);
+    console.log("FLUIDO VERIFICATION CODE:", code);
+// await sendVerificationEmail(normalizedEmail, fullName, code);
 
     return NextResponse.json({
       message: "Account created. Verification code sent.",

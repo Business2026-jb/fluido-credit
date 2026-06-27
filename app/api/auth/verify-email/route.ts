@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendWelcomeEmail } from "@/lib/mail";
+// import { sendWelcomeEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
     const { email, code } = await req.json();
 
     if (!email || !code) {
-      return NextResponse.json({ message: "Email and code are required." }, { status: 400 });
+      return NextResponse.json(
+        { message: "Email and code are required." },
+        { status: 400 }
+      );
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const cleanCode = String(code).trim();
 
     const verification = await prisma.emailVerification.findFirst({
       where: {
         email: normalizedEmail,
-        code,
+        code: cleanCode,
         status: "PENDING",
         expiresAt: { gt: new Date() },
       },
@@ -24,7 +28,10 @@ export async function POST(req: Request) {
     });
 
     if (!verification) {
-      return NextResponse.json({ message: "Invalid or expired verification code." }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid or expired verification code." },
+        { status: 400 }
+      );
     }
 
     await prisma.user.update({
@@ -40,7 +47,8 @@ export async function POST(req: Request) {
       data: { status: "VERIFIED" },
     });
 
-    await sendWelcomeEmail(normalizedEmail, verification.user.fullName);
+    console.log("WELCOME EMAIL DISABLED FOR TEST:", normalizedEmail);
+    // await sendWelcomeEmail(normalizedEmail, verification.user.fullName);
 
     return NextResponse.json({ message: "Account verified successfully." });
   } catch (error) {
