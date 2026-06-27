@@ -1,0 +1,329 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  AGENT
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+}
+
+enum LoanStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+  FUNDED
+  CLOSED
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  LATE
+}
+
+enum NotificationType {
+  EMAIL
+  SMS
+  SYSTEM
+}
+
+model User {
+  id              String   @id @default(cuid())
+  fullName        String
+  email           String   @unique
+  phone           String
+  country         String
+  countryCode     String
+  city            String
+  address         String
+  postalCode      String
+  passwordHash    String
+  role            UserRole @default(CUSTOMER)
+  emailVerified   Boolean  @default(false)
+  isActive         Boolean  @default(false)
+  lastLoginAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+  loginAttempts      LoginAttempt[]
+  loanApplications   LoanApplication[]
+  documents          Document[]
+  notifications      Notification[]
+  sessions           Session[]
+  auditLogs          AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+model EmailVerification {
+  id        String             @id @default(cuid())
+  userId    String
+  email     String
+  code      String
+  status    VerificationStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([code])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model PasswordReset {
+  id        String             @id @default(cuid())
+  userId    String
+  email     String
+  code      String
+  status    VerificationStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([code])
+  @@index([status])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  success   Boolean  @default(false)
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([success])
+  @@index([createdAt])
+}
+
+model LoanApplication {
+  id                String     @id @default(cuid())
+  userId            String
+  amount            Float
+  durationMonths    Int
+  annualRate        Float
+  monthlyPayment    Float
+  totalAmountDue    Float
+  totalInterest     Float
+  purpose           String?
+  status            LoanStatus @default(DRAFT)
+  submittedAt       DateTime?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents         Document[]
+  payments          LoanPayment[]
+  offers            LoanOffer[]
+  statusHistory     LoanStatusHistory[]
+  creditDecision    CreditDecision?
+  riskAssessment    RiskAssessment?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model LoanOffer {
+  id                String   @id @default(cuid())
+  loanApplicationId String
+  amount            Float
+  durationMonths    Int
+  annualRate        Float
+  monthlyPayment    Float
+  totalAmountDue    Float
+  accepted          Boolean  @default(false)
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+
+  @@index([loanApplicationId])
+  @@index([accepted])
+}
+
+model LoanPayment {
+  id                String        @id @default(cuid())
+  loanApplicationId String
+  amount            Float
+  dueDate           DateTime
+  paidAt            DateTime?
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+
+  @@index([loanApplicationId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Document {
+  id                String         @id @default(cuid())
+  userId            String
+  loanApplicationId String?
+  type              String
+  fileUrl           String
+  fileName          String
+  status            DocumentStatus @default(PENDING)
+  rejectionReason   String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loanApplication LoanApplication? @relation(fields: [loanApplicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([loanApplicationId])
+  @@index([status])
+}
+
+model PartnerBank {
+  id        String   @id @default(cuid())
+  name      String
+  country   String
+  logoUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([country])
+  @@index([isActive])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model LoanStatusHistory {
+  id                String     @id @default(cuid())
+  loanApplicationId String
+  status            LoanStatus
+  note              String?
+  createdAt         DateTime   @default(now())
+
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+
+  @@index([loanApplicationId])
+  @@index([status])
+}
+
+model CreditDecision {
+  id                String   @id @default(cuid())
+  loanApplicationId String   @unique
+  score             Int?
+  decision          String
+  reason            String?
+  createdAt         DateTime @default(now())
+
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+}
+
+model RiskAssessment {
+  id                String   @id @default(cuid())
+  loanApplicationId String   @unique
+  riskLevel         String
+  riskScore         Int?
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+}
+
+model Country {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  phoneCode String
+  currency  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  symbol    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
