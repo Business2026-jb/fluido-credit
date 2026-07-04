@@ -133,8 +133,7 @@ export async function POST(req: Request) {
 
     console.log("FLUIDO VERIFICATION CODE:", code);
 
-    // Email Titan désactivé temporairement pendant le développement.
-    // await sendVerificationEmail(normalizedEmail, fullName, code);
+    await sendVerificationEmail(normalizedEmail, fullName, code);
 
     return NextResponse.json({
       message: "Account created. Verification code sent.",
