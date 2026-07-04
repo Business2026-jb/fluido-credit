@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE_NAME } from "@/lib/auth";
 
-export async function POST(req: Request) {
+async function logout(req: Request, redirectToLogin = false) {
   const token = req.headers
     .get("cookie")
     ?.split(";")
@@ -10,10 +10,14 @@ export async function POST(req: Request) {
     ?.split("=")[1];
 
   if (token) {
-    await prisma.session.deleteMany({ where: { token } });
+    await prisma.session.deleteMany({
+      where: { token },
+    });
   }
 
-  const response = NextResponse.json({ message: "Logged out." });
+  const response = redirectToLogin
+    ? NextResponse.redirect(new URL("/login", req.url))
+    : NextResponse.json({ message: "Logged out." });
 
   response.cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
@@ -24,4 +28,12 @@ export async function POST(req: Request) {
   });
 
   return response;
+}
+
+export async function POST(req: Request) {
+  return logout(req, false);
+}
+
+export async function GET(req: Request) {
+  return logout(req, true);
 }

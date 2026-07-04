@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -41,45 +42,46 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F4F7FB] text-[#06183A]">
+    <main className="min-h-screen bg-[#F5F7FB] text-[#06183A]">
       <section className="grid min-h-screen lg:grid-cols-[1fr_520px]">
         <aside className="relative hidden overflow-hidden bg-[#06183A] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.25),transparent_35%)]" />
 
-          <Link href="/" className="relative z-10 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-emerald-500 to-yellow-400 shadow-lg">
-              <span className="text-2xl font-black text-white">F</span>
-            </div>
-            <span className="text-3xl font-black">
-              Fluido<span className="font-medium text-blue-100">Credit</span>
-            </span>
+          <Link href="/" className="relative z-10 flex items-center">
+            <Image
+              src="/alogo.png"
+              alt="Fluido Credit"
+              width={170}
+              height={60}
+              priority
+              className="h-12 w-auto object-contain"
+            />
           </Link>
 
-          <div className="relative z-10 max-w-xl">
+          <div className="relative z-10 max-w-xl animate-[fadeUp_0.8s_ease-out]">
             <p className="mb-5 inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold text-blue-100">
               Secure customer access
             </p>
 
             <h1 className="text-5xl font-black leading-tight">
-              Welcome back to your secure account.
+              Access your Fluido Credit account securely.
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-blue-100">
-              Sign in to manage your loan applications, documents, notifications
-              and secure customer dashboard.
+              Sign in to manage your account, loan applications, documents and
+              banking activity.
             </p>
 
             <div className="mt-10 grid gap-4">
               {[
-                "Encrypted login process",
+                "Encrypted account access",
                 "Secure customer dashboard",
                 "Loan application tracking",
                 "Protected personal information",
               ].map((item) => (
                 <div
                   key={item}
-                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"
+                  className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur transition hover:bg-white/15"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-[#06183A]">
                     ✓
@@ -91,38 +93,45 @@ export default function LoginPage() {
           </div>
 
           <div className="relative z-10 rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-            <p className="text-sm text-blue-100">
-              For your security, never share your password or verification codes.
-              Fluido Credit will never ask for your password by phone or email.
+            <p className="text-sm leading-6 text-blue-100">
+              Never share your password or verification codes. Fluido Credit
+              will never ask for your password by phone or email.
             </p>
           </div>
         </aside>
 
         <section className="flex min-h-screen items-center justify-center px-5 py-6">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md animate-[fadeUp_0.6s_ease-out]">
             <div className="mb-6 flex items-center justify-between lg:hidden">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 via-emerald-500 to-yellow-400">
-                  <span className="text-xl font-black text-white">F</span>
-                </div>
-                <span className="text-2xl font-black">
-                  Fluido<span className="font-medium text-slate-600">Credit</span>
-                </span>
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/alogo.png"
+                  alt="Fluido Credit"
+                  width={150}
+                  height={52}
+                  priority
+                  className="h-11 w-auto object-contain"
+                />
               </Link>
 
-              <Link href="/register" className="text-sm font-black text-[#062B8C]">
+              <Link
+                href="/register"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-black text-[#062B8C]"
+              >
                 Sign up
               </Link>
             </div>
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-blue-900/10 md:p-8">
               <div className="mb-7">
-                <p className="text-sm font-black text-[#062B8C]">
+                <p className="text-sm font-black uppercase tracking-widest text-[#062B8C]">
                   Secure login
                 </p>
+
                 <h2 className="mt-2 text-3xl font-black">
                   Sign in to your account
                 </h2>
+
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Access your secure Fluido Credit customer area.
                 </p>
@@ -139,6 +148,7 @@ export default function LoginPage() {
                   <label className="text-sm font-bold text-slate-600">
                     Email address
                   </label>
+
                   <input
                     required
                     type="email"
@@ -195,7 +205,7 @@ export default function LoginPage() {
                   type="submit"
                   className="flex w-full items-center justify-center rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f68] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {loading ? "Signing in securely..." : "Sign in"}
+                  {loading ? "Signing in..." : "Sign in"}
                 </button>
               </form>
 
@@ -203,6 +213,7 @@ export default function LoginPage() {
                 <p className="text-sm text-slate-500">
                   New to Fluido Credit?
                 </p>
+
                 <Link
                   href="/register"
                   className="mt-1 inline-block text-sm font-black text-[#062B8C]"
@@ -213,12 +224,25 @@ export default function LoginPage() {
 
               <p className="mt-6 text-center text-xs leading-6 text-slate-400">
                 Protected access. Your information is secured and used only for
-                your Fluido Credit account and loan services.
+                your Fluido Credit account.
               </p>
             </div>
           </div>
         </section>
       </section>
+
+      <style jsx global>{`
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </main>
   );
 }

@@ -51,8 +51,8 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendPasswordResetEmail(normalizedEmail, user.fullName, code);
-
+    console.log("FLUIDO RESET CODE:", code);
+// await sendPasswordResetEmail(normalizedEmail, user.fullName, code);
     return NextResponse.json({
       message: "If this email exists, a reset code has been sent.",
     });

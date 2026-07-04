@@ -1,49 +1,31 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { sendEmail } from "@/lib/mail";
 
-export const runtime = "nodejs";
-
-export async function POST() {
+export async function GET() {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"Fluido Credit" <${process.env.SMTP_FROM_EMAIL}>`,
-      to: process.env.SMTP_USER,
+    await sendEmail({
+      to: process.env.FLUIDO_ADMIN_EMAIL || "user@fluidocredit.com",
       subject: "Fluido Credit SMTP Test",
       html: `
-        <h2>SMTP Test Successful</h2>
-
-        <p>If you receive this email, Titan SMTP is working correctly.</p>
-
-        <p><strong>Fluido Credit</strong></p>
+        <div style="font-family:Arial;padding:30px">
+          <h2>Fluido Credit</h2>
+          <p>SMTP connection is working correctly.</p>
+        </div>
       `,
     });
 
     return NextResponse.json({
-      success: true,
-      message: "Email sent successfully.",
+      message: "Test email sent successfully.",
     });
+  } catch (error) {
+    console.error("SMTP_TEST_ERROR:", error);
 
-  } catch (error: any) {
-
-    console.error(error);
-
-    return NextResponse.json({
-      success: false,
-      message: error.message,
-      code: error.code,
-      response: error.response,
-      responseCode: error.responseCode,
-      command: error.command,
-    });
+    return NextResponse.json(
+      {
+        message: "Email test failed.",
+        error: String(error),
+      },
+      { status: 500 }
+    );
   }
 }

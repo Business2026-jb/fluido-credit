@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -102,41 +103,42 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F4F7FB] text-[#06183A]">
+    <main className="min-h-screen bg-[#F5F7FB] text-[#06183A]">
       <section className="grid min-h-screen lg:grid-cols-[1fr_560px]">
         <aside className="relative hidden overflow-hidden bg-[#06183A] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.35),transparent_35%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.25),transparent_35%)]" />
 
           <Link href="/" className="relative z-10 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-emerald-500 to-yellow-400 shadow-lg">
-              <span className="text-2xl font-black text-white">F</span>
-            </div>
-            <span className="text-3xl font-black">
-              Fluido<span className="font-medium text-blue-100">Credit</span>
-            </span>
+            <Image
+              src="/alogo.png"
+              alt="Fluido Credit"
+              width={170}
+              height={60}
+              priority
+              className="h-12 w-auto object-contain"
+            />
           </Link>
 
           <div className="relative z-10 max-w-xl">
             <p className="mb-5 inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-bold text-blue-100">
-              Secure digital banking experience
+              European digital banking
             </p>
 
             <h1 className="text-5xl font-black leading-tight">
-              Open your secure account in minutes.
+              Open your Fluido Credit account securely.
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-blue-100">
-              Create your Fluido Credit profile, verify your email and start
-              your loan application through a secure European-grade process.
+              Create your account, verify your email and access your secure
+              banking dashboard.
             </p>
 
             <div className="mt-10 grid gap-4">
               {[
-                "Encrypted registration flow",
-                "Automatic country detection",
-                "Email verification required",
-                "GDPR-ready customer onboarding",
+                "Secure email verification",
+                "Protected customer onboarding",
+                "Encrypted account access",
+                "European compliance standards",
               ].map((item) => (
                 <div
                   key={item}
@@ -152,9 +154,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="relative z-10 rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-            <p className="text-sm text-blue-100">
-              Your information is used only to create your account, verify your
-              identity and process your loan request securely.
+            <p className="text-sm leading-6 text-blue-100">
+              Your data is protected and used only for account creation,
+              verification and financial services.
             </p>
           </div>
         </aside>
@@ -162,13 +164,15 @@ export default function RegisterPage() {
         <section className="flex min-h-screen items-center justify-center px-5 py-6">
           <div className="w-full max-w-xl">
             <div className="mb-6 flex items-center justify-between lg:hidden">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 via-emerald-500 to-yellow-400">
-                  <span className="text-xl font-black text-white">F</span>
-                </div>
-                <span className="text-2xl font-black">
-                  Fluido<span className="font-medium text-slate-600">Credit</span>
-                </span>
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/alogo.png"
+                  alt="Fluido Credit"
+                  width={150}
+                  height={52}
+                  priority
+                  className="h-11 w-auto object-contain"
+                />
               </Link>
 
               <Link href="/login" className="text-sm font-black text-[#062B8C]">
@@ -178,14 +182,16 @@ export default function RegisterPage() {
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-2xl shadow-blue-900/10 md:p-8">
               <div className="mb-6">
-                <p className="text-sm font-black text-[#062B8C]">
-                  Secure registration
+                <p className="text-sm font-black uppercase tracking-widest text-[#062B8C]">
+                  Secure account opening
                 </p>
+
                 <h2 className="mt-2 text-3xl font-black">
                   Create your account
                 </h2>
+
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Complete your details to receive your verification code by email.
+                  Enter your information to receive your verification code.
                 </p>
               </div>
 
@@ -246,8 +252,8 @@ export default function RegisterPage() {
 
                   <p className="mt-2 text-xs text-slate-400">
                     {loadingCountry
-                      ? "Detecting your country from your IP address..."
-                      : "Country detected automatically. You can change it if needed."}
+                      ? "Detecting your country..."
+                      : "You can change the country if needed."}
                   </p>
                 </div>
 
@@ -366,7 +372,7 @@ export default function RegisterPage() {
                   type="submit"
                   className="flex w-full items-center justify-center rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f68] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  {loading ? "Creating secure account..." : "Create account"}
+                  {loading ? "Creating account..." : "Create account"}
                 </button>
               </form>
 
@@ -378,8 +384,15 @@ export default function RegisterPage() {
               </p>
 
               <p className="mt-5 text-center text-xs leading-6 text-slate-400">
-                By creating an account, you agree to Fluido Credit Terms of Use,
-                Privacy Policy and secure identity verification process.
+                By creating an account, you agree to Fluido Credit{" "}
+                <Link href="/terms" className="font-bold text-slate-500">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="font-bold text-slate-500">
+                  Privacy Policy
+                </Link>
+                .
               </p>
             </div>
           </div>

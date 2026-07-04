@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -41,52 +42,49 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-white text-[#06183A]">
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 via-emerald-500 to-yellow-400 shadow-sm">
-              <span className="text-xl font-black text-white">F</span>
-            </div>
-            <span className="text-2xl font-black tracking-tight">
-              Fluido<span className="font-medium text-slate-600">Credit</span>
-            </span>
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logo.png"
+              alt="Fluido Credit"
+              width={170}
+              height={56}
+              priority
+              className="h-11 w-auto object-contain md:h-12"
+            />
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
-            <a href="#how" className="text-sm font-semibold text-slate-600 hover:text-blue-800">
+          <nav className="hidden items-center gap-8 lg:flex">
+            <a href="#how" className="text-sm font-bold text-slate-600 hover:text-[#062B8C]">
               How it works
             </a>
-            <a href="#partners" className="text-sm font-semibold text-slate-600 hover:text-blue-800">
+            <a href="#partners" className="text-sm font-bold text-slate-600 hover:text-[#062B8C]">
               Partners
             </a>
-            <a href="#security" className="text-sm font-semibold text-slate-600 hover:text-blue-800">
+            <a href="#security" className="text-sm font-bold text-slate-600 hover:text-[#062B8C]">
               Security
             </a>
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <Link href="/login" className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-slate-50">
+            <Link href="/login" className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-[#06183A] hover:bg-slate-50">
               Log in
             </Link>
-            <Link href="/register" className="rounded-xl bg-[#062B8C] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/20 hover:bg-[#041f68]">
-              Sign up
+            <Link href="/register" className="rounded-2xl bg-[#062B8C] px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-900/20 hover:bg-[#041f68]">
+              Open account
             </Link>
           </div>
 
-          <button className="md:hidden rounded-xl border border-slate-300 p-3">
-            <span className="block h-0.5 w-6 bg-[#06183A]" />
-            <span className="mt-1.5 block h-0.5 w-6 bg-[#06183A]" />
-            <span className="mt-1.5 block h-0.5 w-6 bg-[#06183A]" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 px-5 pb-4 md:hidden">
-          <Link href="/login" className="rounded-xl border border-slate-300 py-3 text-center text-sm font-bold">
+          <Link href="/login" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-black md:hidden">
             Log in
           </Link>
-          <Link href="/register" className="rounded-xl bg-[#062B8C] py-3 text-center text-sm font-bold text-white">
-            Sign up
-          </Link>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 border-t border-slate-100 px-4 py-3 text-center text-xs font-black text-slate-600 md:hidden">
+          <a href="#how" className="rounded-xl bg-slate-50 py-3">How it works</a>
+          <a href="#partners" className="rounded-xl bg-slate-50 py-3">Partners</a>
+          <a href="#security" className="rounded-xl bg-slate-50 py-3">Security</a>
         </div>
       </header>
 
@@ -318,9 +316,13 @@ export default function HomePage() {
       <footer className="bg-[#06183A] text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-10 md:grid-cols-4">
           <div>
-            <h2 className="text-2xl font-black">
-              Fluido<span className="font-medium text-blue-200">Credit</span>
-            </h2>
+            <Image
+              src="/logo.png"
+              alt="Fluido Credit"
+              width={170}
+              height={56}
+              className="h-12 w-auto object-contain brightness-0 invert"
+            />
             <p className="mt-4 text-sm leading-7 text-blue-100">
               Smart loans for your projects, with transparency and trust.
             </p>
@@ -329,36 +331,39 @@ export default function HomePage() {
           <div>
             <h3 className="font-black">Company</h3>
             <ul className="mt-4 space-y-3 text-sm text-blue-100">
-              <li>About us</li>
-              <li>How it works</li>
-              <li>Partners</li>
-              <li>Contact</li>
+              <li><a href="#how">How it works</a></li>
+              <li><a href="#partners">Partners</a></li>
+              <li><a href="#security">Security</a></li>
+              <li><Link href="/contact">Contact</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-black">Resources</h3>
+            <h3 className="font-black">Account</h3>
             <ul className="mt-4 space-y-3 text-sm text-blue-100">
-              <li>FAQ</li>
-              <li>Loan guide</li>
-              <li>Support</li>
-              <li>Security</li>
+              <li><Link href="/login">Log in</Link></li>
+              <li><Link href="/register">Open account</Link></li>
+              <li><Link href="/dashboard">Dashboard</Link></li>
+              <li><Link href="/loans/apply">Apply for loan</Link></li>
             </ul>
           </div>
 
           <div>
             <h3 className="font-black">Legal</h3>
             <ul className="mt-4 space-y-3 text-sm text-blue-100">
-              <li>Terms of use</li>
-              <li>Privacy policy</li>
-              <li>Cookies policy</li>
-              <li>GDPR</li>
+              <li><Link href="/terms">Terms of use</Link></li>
+              <li><Link href="/privacy">Privacy policy</Link></li>
+              <li><Link href="/legal">Legal notice</Link></li>
+              <li><Link href="/support">Support</Link></li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-white/10 px-5 py-5 text-center text-sm text-blue-100">
-          © 2026 Fluido Credit. All rights reserved.
+        <div className="border-t border-white/10 px-5 py-5">
+          <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 text-sm text-blue-100 md:flex-row">
+            <p>© 2026 Fluido Credit. All rights reserved.</p>
+            <p>Secure digital lending platform.</p>
+          </div>
         </div>
       </footer>
     </main>
