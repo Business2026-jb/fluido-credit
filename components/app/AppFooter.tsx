@@ -85,7 +85,7 @@ export default function AppFooter() {
           </h3>
 
           <div className="mt-4 grid gap-3 text-sm font-semibold text-slate-600">
-            <Link href="/loans" className="hover:text-[#062B8C]">
+            <Link href="/loans/apply" className="hover:text-[#062B8C]">
               Loans
             </Link>
             <Link href="/documents" className="hover:text-[#062B8C]">

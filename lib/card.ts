@@ -38,7 +38,7 @@ export function getVirtualCard(user: VirtualCardUser) {
     maskedCvv: "•••",
     holder: user.fullName.toUpperCase(),
     status: user.emailVerified ? "Active" : "Pending",
-    brand: "FLUIDO",
+    brand: "VISA",
     network: "VISA",
     type: "Virtual Debit",
     level: "Private Banking",
