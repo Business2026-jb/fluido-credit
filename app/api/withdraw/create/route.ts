@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   sendWithdrawalCustomerEmail,
   sendWithdrawalAdminEmail,
+  sendWithdrawalBeneficiaryEmail,
 } from "@/lib/mail";
 
 function generateReference() {
@@ -23,16 +24,24 @@ export async function POST(req: Request) {
     const amount = Number(body.amount);
     const method = String(body.method || "").trim();
     const destinationName = String(body.destinationName || "").trim();
+    const destinationEmail = String(body.destinationEmail || "")
+      .toLowerCase()
+      .trim();
     const destinationIban = String(body.destinationIban || "")
       .replace(/\s+/g, "")
       .toUpperCase()
       .trim();
-    const destinationBic = String(body.destinationBic || "").toUpperCase().trim();
+    const destinationBic = String(body.destinationBic || "")
+      .toUpperCase()
+      .trim();
     const description = String(body.description || "").trim();
 
     if (!amount || !method || !destinationName || !destinationIban) {
       return NextResponse.json(
-        { message: "Amount, withdrawal method, beneficiary name and IBAN are required." },
+        {
+          message:
+            "Amount, withdrawal method, beneficiary name and IBAN are required.",
+        },
         { status: 400 }
       );
     }
@@ -136,6 +145,17 @@ export async function POST(req: Request) {
         description: description || null,
         reference,
       });
+
+      if (destinationEmail) {
+        await sendWithdrawalBeneficiaryEmail({
+          email: destinationEmail,
+          beneficiaryName: destinationName,
+          senderName: user.fullName,
+          amount,
+          currency: account.currency,
+          reference,
+        });
+      }
     } catch (emailError) {
       console.error("WITHDRAWAL_EMAIL_ERROR:", emailError);
     }

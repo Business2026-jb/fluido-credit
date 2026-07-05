@@ -15,6 +15,7 @@ export default function WithdrawPage() {
   const [amount, setAmount] = useState("");
   const [transferType, setTransferType] = useState<"FLUIDO" | "BANK">("BANK");
   const [destinationName, setDestinationName] = useState("");
+  const [destinationEmail, setDestinationEmail] = useState("");
   const [destinationIban, setDestinationIban] = useState("");
   const [destinationBic, setDestinationBic] = useState("");
   const [description, setDescription] = useState("");
@@ -66,6 +67,7 @@ export default function WithdrawPage() {
           amount: numericAmount,
           method,
           destinationName,
+          destinationEmail,
           destinationIban,
           destinationBic,
           description,
@@ -83,6 +85,7 @@ export default function WithdrawPage() {
 
       setAmount("");
       setDestinationName("");
+      setDestinationEmail("");
       setDestinationIban("");
       setDestinationBic("");
       setDescription("");
@@ -108,7 +111,8 @@ export default function WithdrawPage() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Transfer available funds to another Fluido Credit account or to an external bank account.
+              Transfer available funds to another Fluido Credit account or to an
+              external bank account.
             </p>
           </div>
 
@@ -216,6 +220,25 @@ export default function WithdrawPage() {
               />
             </div>
 
+            <div className="mt-6">
+              <label className="text-sm font-bold text-slate-600">
+                Beneficiary email
+              </label>
+
+              <input
+                type="email"
+                value={destinationEmail}
+                onChange={(e) => setDestinationEmail(e.target.value)}
+                placeholder="beneficiary@example.com"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none"
+              />
+
+              <p className="mt-2 text-xs text-slate-400">
+                Optional. If provided, the beneficiary will receive a
+                confirmation email.
+              </p>
+            </div>
+
             {transferType === "FLUIDO" ? (
               <div className="mt-6">
                 <label className="text-sm font-bold text-slate-600">
@@ -225,7 +248,9 @@ export default function WithdrawPage() {
                 <input
                   required
                   value={destinationIban}
-                  onChange={(e) => setDestinationIban(e.target.value.toUpperCase())}
+                  onChange={(e) =>
+                    setDestinationIban(e.target.value.toUpperCase())
+                  }
                   placeholder="FR76..."
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none"
                 />
@@ -240,7 +265,9 @@ export default function WithdrawPage() {
                   <input
                     required
                     value={destinationIban}
-                    onChange={(e) => setDestinationIban(e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                      setDestinationIban(e.target.value.toUpperCase())
+                    }
                     placeholder="FR76..."
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none"
                   />
@@ -253,7 +280,9 @@ export default function WithdrawPage() {
 
                   <input
                     value={destinationBic}
-                    onChange={(e) => setDestinationBic(e.target.value.toUpperCase())}
+                    onChange={(e) =>
+                      setDestinationBic(e.target.value.toUpperCase())
+                    }
                     placeholder="Optional"
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none"
                   />
@@ -283,7 +312,8 @@ export default function WithdrawPage() {
                   className="mt-1"
                 />
                 <span>
-                  I confirm that the beneficiary details are correct and I authorize Fluido Credit to process this withdrawal.
+                  I confirm that the beneficiary details are correct and I
+                  authorize Fluido Credit to process this withdrawal.
                 </span>
               </label>
             </div>
@@ -352,7 +382,8 @@ export default function WithdrawPage() {
 
               <div className="mt-5 space-y-3 text-sm text-slate-600">
                 <p className="rounded-2xl bg-slate-50 p-4">
-                  The requested amount must be available in your account before processing.
+                  The requested amount must be available in your account before
+                  processing.
                 </p>
 
                 <p className="rounded-2xl bg-slate-50 p-4">

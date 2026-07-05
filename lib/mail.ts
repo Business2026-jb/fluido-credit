@@ -435,3 +435,137 @@ export async function sendLoanStatusCustomerEmail(data: {
     `,
   });
 }
+
+export async function sendWithdrawalBeneficiaryEmail(data: {
+  email: string;
+  beneficiaryName: string;
+  senderName: string;
+  amount: number;
+  currency: string;
+  reference: string;
+}) {
+  return sendEmail({
+    to: data.email,
+    subject: "Incoming Fluido Credit transfer notification",
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:620px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+          <h2>Incoming transfer notification</h2>
+          <p>Hello <strong>${data.beneficiaryName}</strong>,</p>
+          <p>A withdrawal transfer has been initiated in your favour by <strong>${data.senderName}</strong>.</p>
+
+          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+            <p><strong>Reference:</strong> ${data.reference}</p>
+            <p><strong>Status:</strong> Processing</p>
+          </div>
+
+          <p>The transfer is being reviewed and processed securely.</p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendTransferCustomerEmail(data: {
+  email: string;
+  fullName: string;
+  beneficiaryName: string;
+  beneficiaryIban: string;
+  amount: number;
+  currency: string;
+  reference: string;
+}) {
+  return sendEmail({
+    to: data.email,
+    subject: "Your Fluido Credit transfer has been created",
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:620px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+          <h2>Transfer confirmation</h2>
+          <p>Hello <strong>${data.fullName}</strong>,</p>
+          <p>Your transfer has been created successfully.</p>
+
+          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+            <p><strong>Beneficiary:</strong> ${data.beneficiaryName}</p>
+            <p><strong>IBAN:</strong> ${data.beneficiaryIban}</p>
+            <p><strong>Reference:</strong> ${data.reference}</p>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendTransferBeneficiaryEmail(data: {
+  email: string;
+  beneficiaryName: string;
+  senderName: string;
+  amount: number;
+  currency: string;
+  reference: string;
+}) {
+  return sendEmail({
+    to: data.email,
+    subject: "You received a Fluido Credit transfer",
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:620px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+          <h2>Money received</h2>
+          <p>Hello <strong>${data.beneficiaryName}</strong>,</p>
+          <p>You have received a transfer from <strong>${data.senderName}</strong>.</p>
+
+          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+            <p><strong>Reference:</strong> ${data.reference}</p>
+            <p><strong>Status:</strong> Completed</p>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendTransferAdminEmail(data: {
+  adminEmail: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  beneficiaryName: string;
+  beneficiaryIban: string;
+  beneficiaryBic?: string | null;
+  amount: number;
+  currency: string;
+  description?: string | null;
+  reference: string;
+}) {
+  return sendEmail({
+    to: data.adminEmail,
+    subject: `New transfer - ${data.customerName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:680px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit Admin</h1>
+          <h2>New transfer created</h2>
+
+          <p><strong>Customer:</strong> ${data.customerName}</p>
+          <p><strong>Email:</strong> ${data.customerEmail}</p>
+          <p><strong>Phone:</strong> ${data.customerPhone}</p>
+
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+
+          <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+          <p><strong>Beneficiary:</strong> ${data.beneficiaryName}</p>
+          <p><strong>IBAN:</strong> ${data.beneficiaryIban}</p>
+          <p><strong>BIC:</strong> ${data.beneficiaryBic || "Not provided"}</p>
+          <p><strong>Description:</strong> ${data.description || "Not provided"}</p>
+          <p><strong>Reference:</strong> ${data.reference}</p>
+        </div>
+      </div>
+    `,
+  });
+}
