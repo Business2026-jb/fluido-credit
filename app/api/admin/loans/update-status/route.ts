@@ -2,6 +2,7 @@ import { FLUIDO_BIC, generateFluidoIban } from "@/lib/banking";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
+import { sendLoanStatusCustomerEmail } from "@/lib/mail";
 
 const VALID_STATUSES = [
   "SUBMITTED",
@@ -13,16 +14,58 @@ const VALID_STATUSES = [
 
 type LoanStatus = (typeof VALID_STATUSES)[number];
 
-function generateIban(userId: string) {
-  return `FR76${userId
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(-20)
-    .padStart(20, "0")
-    .toUpperCase()}`;
-}
-
 function isValidLoanStatus(status: string): status is LoanStatus {
   return VALID_STATUSES.includes(status as LoanStatus);
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 2,
+  }).format(value || 0);
+}
+
+function getCustomerEmailContent(status: LoanStatus, loanAmount: number, note: string) {
+  const amount = formatMoney(loanAmount);
+
+  if (status === "UNDER_REVIEW") {
+    return {
+      subject: "Your Fluido Credit loan is under review",
+      title: "Loan under review",
+      message: `Your loan request of ${amount} is now being reviewed by our financing team.`,
+    };
+  }
+
+  if (status === "APPROVED") {
+    return {
+      subject: "Your Fluido Credit loan has been approved",
+      title: "Loan approved",
+      message: `Your loan request of ${amount} has been approved. The funds will be released after final funding validation.`,
+    };
+  }
+
+  if (status === "FUNDED") {
+    return {
+      subject: "Your Fluido Credit loan has been funded",
+      title: "Funds credited",
+      message: `Your approved loan of ${amount} has been credited to your Fluido Credit account.`,
+    };
+  }
+
+  if (status === "REJECTED") {
+    return {
+      subject: "Update on your Fluido Credit loan request",
+      title: "Loan request not approved",
+      message: `After review, your loan request of ${amount} could not be approved at this time.`,
+    };
+  }
+
+  return {
+    subject: "Your Fluido Credit loan status has been updated",
+    title: "Loan status updated",
+    message: `Your loan request of ${amount} has been updated.`,
+  };
 }
 
 export async function POST(req: Request) {
@@ -52,6 +95,7 @@ export async function POST(req: Request) {
       async (tx) => {
         const loan = await tx.loanApplication.findUnique({
           where: { id: loanId },
+          include: { user: true },
         });
 
         if (!loan) {
@@ -133,26 +177,36 @@ export async function POST(req: Request) {
         });
 
         return {
+          loanId: loan.id,
           loanUserId: loan.userId,
           loanAmount: loan.amount,
+          customerEmail: loan.user.email,
+          customerName: loan.user.fullName,
           credited,
         };
       },
-      {
-        timeout: 20000,
-      }
+      { timeout: 20000 }
     );
 
-    if (status === "FUNDED" && result.credited) {
-      await prisma.notification.create({
-        data: {
-          userId: result.loanUserId,
-          type: "SYSTEM",
-          title: "Loan Funded",
-          message: `Your approved loan of ${result.loanAmount} EUR has been credited to your account.`,
-        },
-      });
-    }
+    const content = getCustomerEmailContent(status, result.loanAmount, note);
+
+    await prisma.notification.create({
+      data: {
+        userId: result.loanUserId,
+        type: "SYSTEM",
+        title: content.title,
+        message: content.message,
+      },
+    });
+
+    await sendLoanStatusCustomerEmail({
+  email: result.customerEmail,
+  fullName: result.customerName,
+  status,
+  amount: result.loanAmount,
+  loanId: result.loanId,
+  note: note || null,
+});
 
     await prisma.auditLog.create({
       data: {
@@ -170,7 +224,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.redirect("https://fluidocredit.com/admin/loans");
+    return NextResponse.redirect(new URL("/admin/loans", req.url));
   } catch (error) {
     console.error("ADMIN_LOAN_STATUS_ERROR:", error);
 

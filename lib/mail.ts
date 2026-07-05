@@ -355,3 +355,83 @@ export async function sendDocumentDecisionCustomerEmail(
     `,
   });
 }
+
+export async function sendLoanStatusCustomerEmail(data: {
+  email: string;
+  fullName: string;
+  status: "SUBMITTED" | "UNDER_REVIEW" | "APPROVED" | "FUNDED" | "REJECTED";
+  amount: number;
+  loanId: string;
+  note?: string | null;
+}) {
+  const amount = new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(data.amount || 0);
+
+  const content =
+    data.status === "UNDER_REVIEW"
+      ? {
+          subject: "Your Fluido Credit loan is under review",
+          title: "Loan under review",
+          message: `Your loan request of ${amount} is now being reviewed by our financing team.`,
+        }
+      : data.status === "APPROVED"
+      ? {
+          subject: "Your Fluido Credit loan has been approved",
+          title: "Loan approved",
+          message: `Your loan request of ${amount} has been approved.`,
+        }
+      : data.status === "FUNDED"
+      ? {
+          subject: "Your Fluido Credit loan has been funded",
+          title: "Funds credited",
+          message: `Your approved loan of ${amount} has been credited to your Fluido Credit account.`,
+        }
+      : data.status === "REJECTED"
+      ? {
+          subject: "Update on your Fluido Credit loan request",
+          title: "Loan request not approved",
+          message: `Your loan request of ${amount} could not be approved at this time.`,
+        }
+      : {
+          subject: "Your Fluido Credit loan status has been updated",
+          title: "Loan status updated",
+          message: `Your loan request of ${amount} has been updated.`,
+        };
+
+  return sendEmail({
+    to: data.email,
+    subject: content.subject,
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:620px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+          <h2 style="color:#06183A;margin-top:24px;">${content.title}</h2>
+
+          <p>Hello <strong>${data.fullName}</strong>,</p>
+          <p>${content.message}</p>
+
+          ${
+            data.note
+              ? `<div style="background:#eef5ff;border-radius:18px;padding:18px;margin:24px 0;">
+                  <strong>Note from Fluido Credit:</strong>
+                  <p style="margin-bottom:0;">${data.note}</p>
+                </div>`
+              : ""
+          }
+
+          <div style="background:#f8fafc;border-radius:18px;padding:18px;margin:24px 0;">
+            <p><strong>Amount:</strong> ${amount}</p>
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Application ID:</strong> ${data.loanId}</p>
+          </div>
+
+          <p style="font-size:13px;color:#64748b;">
+            You can view this update from your secure Fluido Credit dashboard.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
