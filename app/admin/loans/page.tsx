@@ -202,7 +202,7 @@ export default async function AdminLoansPage() {
                     </p>
 
                     <form
-                      action="/api/admin/loans/update-status"
+                      action="https://fluidocredit.com/api/admin/loans/update-status"
                       method="POST"
                       className="mt-5 space-y-3"
                     >

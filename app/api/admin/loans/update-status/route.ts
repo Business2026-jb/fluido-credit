@@ -224,7 +224,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.redirect(new URL("/admin/loans", process.env.NEXT_PUBLIC_APP_URL || req.url));
+return NextResponse.redirect("https://fluidocredit.com/admin/loans");
   } catch (error) {
     console.error("ADMIN_LOAN_STATUS_ERROR:", error);
 
