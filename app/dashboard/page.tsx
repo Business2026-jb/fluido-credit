@@ -24,14 +24,6 @@ const formatMoney = (value: number, currency = "EUR") =>
     maximumFractionDigits: 2,
   }).format(value || 0);
 
-function generateIban(userId: string) {
-  return `FR76${userId
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(-20)
-    .padStart(20, "0")
-    .toUpperCase()}`;
-}
-
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
@@ -85,10 +77,12 @@ export default async function DashboardPage() {
   );
 
   const totalRequested = loans.reduce((sum, loan) => sum + loan.amount, 0);
+
   const totalApproved = approvedLoans.reduce(
     (sum, loan) => sum + loan.amount,
     0
   );
+
   const totalMonthlyPayment = loans.reduce(
     (sum, loan) => sum + loan.monthlyPayment,
     0
@@ -108,10 +102,6 @@ export default async function DashboardPage() {
                 <h1 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">
                   Welcome back, {user.fullName.split(" ")[0]}
                 </h1>
-
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-blue-100">
-                  
-                </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -195,11 +185,11 @@ export default async function DashboardPage() {
                     {loans.map((loan) => (
                       <div
                         key={loan.id}
-                        className="rounded-[2rem] border border-slate-200 p-6 transition hover:border-[#062B8C] hover:shadow-lg"
+                        className="rounded-[2rem] border border-slate-200 bg-white p-5 transition hover:border-[#062B8C] hover:shadow-lg"
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h3 className="text-lg font-black text-[#06183A]">
+                            <h3 className="line-clamp-2 text-lg font-black text-[#06183A]">
                               {loan.purpose || "Loan Application"}
                             </h3>
 
@@ -211,28 +201,25 @@ export default async function DashboardPage() {
                           <LoanStatusBadge status={loan.status} />
                         </div>
 
-                        <p className="mt-6 text-4xl font-black text-[#06183A]">
+                        <p className="mt-6 text-3xl font-black text-[#06183A]">
                           {formatMoney(loan.amount)}
                         </p>
 
-                        <div className="mt-6 grid grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-xs text-slate-400">Interest</p>
-                            <p className="mt-2 font-black">
-                              {loan.annualRate}%
+                        <div className="mt-5 grid grid-cols-2 gap-3">
+                          <div className="rounded-2xl bg-slate-50 p-4">
+                            <p className="text-xs font-bold text-slate-400">
+                              Duration
+                            </p>
+                            <p className="mt-1 font-black">
+                              {loan.durationMonths} months
                             </p>
                           </div>
 
-                          <div>
-                            <p className="text-xs text-slate-400">Duration</p>
-                            <p className="mt-2 font-black">
-                              {loan.durationMonths} mo
+                          <div className="rounded-2xl bg-slate-50 p-4">
+                            <p className="text-xs font-bold text-slate-400">
+                              Monthly
                             </p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs text-slate-400">Monthly</p>
-                            <p className="mt-2 font-black">
+                            <p className="mt-1 font-black">
                               {formatMoney(loan.monthlyPayment)}
                             </p>
                           </div>
@@ -240,9 +227,9 @@ export default async function DashboardPage() {
 
                         <Link
                           href={`/loans/${loan.id}`}
-                          className="mt-8 block rounded-2xl bg-[#062B8C] py-4 text-center font-black text-white hover:bg-[#041f66]"
+                          className="mt-6 block rounded-2xl bg-[#062B8C] py-4 text-center text-sm font-black text-white hover:bg-[#041f66]"
                         >
-                          View Details
+                          View details
                         </Link>
                       </div>
                     ))}
