@@ -12,7 +12,7 @@ import {
 
 const items = [
   { label: "Home", icon: Home, href: "/dashboard" },
-  { label: "Loans", icon: Landmark, href: "/loans" },
+  { label: "Loans", icon: Landmark, href: "/loans/apply" },
   { label: "Cards", icon: CreditCard, href: "/cards" },
   { label: "Activity", icon: Activity, href: "/transactions" },
   { label: "Profile", icon: UserRound, href: "/profile" },

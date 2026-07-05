@@ -48,8 +48,8 @@ export default function AppHeader() {
           <Image
             src="/logo.png"
             alt="Fluido Credit"
-            width={46}
-            height={46}
+            width={170}
+            height={56}
             priority
             className="rounded-xl"
           />

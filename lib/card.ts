@@ -24,7 +24,7 @@ export function getVirtualCard(user: VirtualCardUser) {
   const rawNumber = digitsFromText(`${user.id}${user.email}`, 16);
   const cvv = digitsFromText(`${user.email}${user.id}`, 3);
 
-  const expiryDate = new Date(user.createdAt);
+  const expiryDate = new Date(user.createdAt || new Date());
   expiryDate.setFullYear(expiryDate.getFullYear() + 3);
 
   const month = String(expiryDate.getMonth() + 1).padStart(2, "0");
@@ -32,11 +32,11 @@ export function getVirtualCard(user: VirtualCardUser) {
 
   return {
     number: formatCardNumber(rawNumber),
-    maskedNumber: `•••• •••• •••• ${rawNumber.slice(-4)}`,
+    maskedNumber: `**** **** **** ${rawNumber.slice(-4)}`,
     expiry: `${month}/${year}`,
     cvv,
-    maskedCvv: "•••",
-    holder: user.fullName.toUpperCase(),
+    maskedCvv: "***",
+    holder: (user.fullName || "FLUIDO CUSTOMER").toUpperCase(),
     status: user.emailVerified ? "Active" : "Pending",
     brand: "VISA",
     network: "VISA",
