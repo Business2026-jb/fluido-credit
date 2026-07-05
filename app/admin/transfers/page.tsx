@@ -14,12 +14,8 @@ export default async function AdminTransfersPage() {
   await requireAdmin();
 
   const transfers = await prisma.transaction.findMany({
-    where: {
-      type: "TRANSFER",
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    where: { type: "TRANSFER" },
+    orderBy: { createdAt: "desc" },
     include: {
       user: true,
       account: true,
@@ -30,8 +26,6 @@ export default async function AdminTransfersPage() {
   const processing = transfers.filter((tx) => tx.status === "PROCESSING");
   const completed = transfers.filter((tx) => tx.status === "COMPLETED");
   const failed = transfers.filter((tx) => tx.status === "FAILED");
-  const cancelled = transfers.filter((tx) => tx.status === "CANCELLED");
-
   const totalProcessing = processing.reduce((sum, tx) => sum + tx.amount, 0);
 
   return (
@@ -39,7 +33,7 @@ export default async function AdminTransfersPage() {
       <section className="mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-center">
           <div>
-            <p className="text-sm font-black text-[#062B8C]">
+            <p className="text-sm font-black uppercase tracking-widest text-[#062B8C]">
               Admin Transfer Center
             </p>
 
@@ -48,13 +42,13 @@ export default async function AdminTransfersPage() {
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
-              Monitor internal and external transfers, review processing items and update transaction status.
+              Monitor customer transfers and update transaction status securely.
             </p>
           </div>
 
           <Link
             href="/admin"
-            className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black"
+            className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-black text-[#06183A]"
           >
             Back to Admin Dashboard
           </Link>
@@ -126,33 +120,20 @@ export default async function AdminTransfersPage() {
                     </div>
 
                     <div className="mt-5 grid gap-3 text-sm md:grid-cols-2">
-                      <p>
-                        <strong>Customer:</strong> {tx.user.fullName}
-                      </p>
-                      <p>
-                        <strong>Email:</strong> {tx.user.email}
-                      </p>
-                      <p>
-                        <strong>Phone:</strong> {tx.user.phone}
-                      </p>
-                      <p>
-                        <strong>Created:</strong>{" "}
-                        {new Date(tx.createdAt).toLocaleString()}
-                      </p>
-                      <p>
-                        <strong>Beneficiary:</strong>{" "}
-                        {tx.beneficiaryName || "Not provided"}
-                      </p>
-                      <p>
-                        <strong>BIC:</strong>{" "}
-                        {tx.beneficiaryBic || "Not provided"}
-                      </p>
+                      <p><strong>Customer:</strong> {tx.user.fullName}</p>
+                      <p><strong>Email:</strong> {tx.user.email}</p>
+                      <p><strong>Phone:</strong> {tx.user.phone}</p>
+                      <p><strong>Created:</strong> {new Date(tx.createdAt).toLocaleString()}</p>
+                      <p><strong>Beneficiary:</strong> {tx.beneficiaryName || "Not provided"}</p>
+                      <p><strong>BIC:</strong> {tx.beneficiaryBic || "Not provided"}</p>
+
                       <p className="md:col-span-2">
                         <strong>IBAN:</strong>{" "}
                         <span className="break-all">
                           {tx.beneficiaryIban || "Not provided"}
                         </span>
                       </p>
+
                       <p className="md:col-span-2">
                         <strong>Description:</strong>{" "}
                         {tx.description || "No description"}
@@ -166,7 +147,7 @@ export default async function AdminTransfersPage() {
                     </h3>
 
                     <form
-                      action="/api/admin/transfers/update-status"
+                      action="https://fluidocredit.com/api/admin/transfers/update-status"
                       method="POST"
                       className="mt-4 space-y-3"
                     >
@@ -178,35 +159,19 @@ export default async function AdminTransfersPage() {
                         className="min-h-24 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold outline-none"
                       />
 
-                      <button
-                        name="status"
-                        value="PROCESSING"
-                        className="w-full rounded-2xl bg-amber-500 py-3 text-sm font-black text-white"
-                      >
+                      <button name="status" value="PROCESSING" className="w-full rounded-2xl bg-amber-500 py-3 text-sm font-black text-white">
                         Mark Processing
                       </button>
 
-                      <button
-                        name="status"
-                        value="COMPLETED"
-                        className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-black text-white"
-                      >
+                      <button name="status" value="COMPLETED" className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-black text-white">
                         Mark Completed
                       </button>
 
-                      <button
-                        name="status"
-                        value="FAILED"
-                        className="w-full rounded-2xl bg-red-600 py-3 text-sm font-black text-white"
-                      >
+                      <button name="status" value="FAILED" className="w-full rounded-2xl bg-red-600 py-3 text-sm font-black text-white">
                         Mark Failed
                       </button>
 
-                      <button
-                        name="status"
-                        value="CANCELLED"
-                        className="w-full rounded-2xl bg-slate-800 py-3 text-sm font-black text-white"
-                      >
+                      <button name="status" value="CANCELLED" className="w-full rounded-2xl bg-slate-800 py-3 text-sm font-black text-white">
                         Cancel Transfer
                       </button>
                     </form>
