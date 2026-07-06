@@ -94,7 +94,10 @@ export async function POST(req: Request) {
       console.error("DOCUMENT_EMAIL_ERROR:", emailError);
     }
 
-    return NextResponse.redirect(new URL("/documents", req.url));
+    const APP_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://fluidocredit.com";
+
+return NextResponse.redirect(`${APP_URL}/documents`);
   } catch (error) {
     console.error("DOCUMENT_UPLOAD_ERROR:", error);
 
