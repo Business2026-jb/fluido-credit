@@ -25,7 +25,6 @@ function cleanIbanValue(value: string) {
 export default function TransfersPage() {
   const [beneficiaryName, setBeneficiaryName] = useState("");
   const [beneficiaryIban, setBeneficiaryIban] = useState("");
-  const [beneficiaryBic, setBeneficiaryBic] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [accepted, setAccepted] = useState(false);
@@ -44,11 +43,12 @@ export default function TransfersPage() {
     [beneficiaryIban]
   );
 
-  const transferType = ibanStatus?.found ? "FLUIDO" : "BANK";
+  const beneficiaryDetected = Boolean(ibanStatus?.found);
 
   useEffect(() => {
     async function resolveIban() {
       setIbanStatus(null);
+      setBeneficiaryName("");
 
       if (cleanIban.length < 12) return;
 
@@ -92,13 +92,20 @@ export default function TransfersPage() {
       return;
     }
 
-    if (!beneficiaryName.trim()) {
-      setError("Please enter the beneficiary name.");
+    if (!cleanIban) {
+      setError("Please enter the beneficiary Fluido Credit IBAN.");
       return;
     }
 
-    if (!cleanIban) {
-      setError("Please enter the beneficiary IBAN.");
+    if (!beneficiaryDetected) {
+      setError(
+        "This IBAN is not linked to an active Fluido Credit account. Please verify the IBAN."
+      );
+      return;
+    }
+
+    if (!beneficiaryName.trim()) {
+      setError("Unable to identify the beneficiary. Please verify the IBAN.");
       return;
     }
 
@@ -116,16 +123,16 @@ export default function TransfersPage() {
         body: JSON.stringify({
           beneficiaryName,
           beneficiaryIban: cleanIban,
-          beneficiaryBic,
+          beneficiaryBic: "",
           amount: numericAmount,
-          description,
+          description: description || "Internal Fluido Credit transfer",
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Unable to create transfer.");
+        setError(data.message || "Unable to complete transfer.");
         return;
       }
 
@@ -133,13 +140,12 @@ export default function TransfersPage() {
 
       setBeneficiaryName("");
       setBeneficiaryIban("");
-      setBeneficiaryBic("");
       setAmount("");
       setDescription("");
       setAccepted(false);
       setIbanStatus(null);
     } catch {
-      setError("Unable to create transfer. Please try again.");
+      setError("Unable to complete transfer. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -147,279 +153,261 @@ export default function TransfersPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-7xl px-4 py-6 md:px-8">
-        <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#06183A] via-[#062B8C] to-[#0B5FFF] p-6 text-white shadow-xl md:p-8">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-            <div>
-              <p className="text-sm font-black uppercase tracking-widest text-blue-100">
-                Secure Transfers
-              </p>
-
-              <h1 className="mt-3 text-3xl font-black md:text-5xl">
-                Send Money
-              </h1>
-
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
-                Send funds securely to another Fluido Credit account or to an
-                external bank beneficiary.
-              </p>
-            </div>
-
-            <Link
-              href="/transactions"
-              className="rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-[#062B8C]"
-            >
-              View Transactions
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
-          <form
-            onSubmit={submitTransfer}
-            className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-8"
-          >
-            <h2 className="text-xl font-black text-[#06183A]">
-              Transfer Details
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Enter the beneficiary IBAN. If it belongs to a Fluido Credit
-              customer, the beneficiary is detected automatically.
-            </p>
-
-            {error && (
-              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
-                {error}
-              </div>
-            )}
-
-            {message && (
-              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-                {message}
-              </div>
-            )}
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <div
-                className={`rounded-[2rem] border p-5 ${
-                  transferType === "FLUIDO"
-                    ? "border-[#062B8C] bg-blue-50"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <p className="text-lg font-black text-[#06183A]">
-                  Internal Fluido
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Completed instantly when the IBAN belongs to Fluido Credit.
-                </p>
-              </div>
-
-              <div
-                className={`rounded-[2rem] border p-5 ${
-                  transferType === "BANK"
-                    ? "border-[#062B8C] bg-blue-50"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <p className="text-lg font-black text-[#06183A]">
-                  External Bank
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Processed securely after review.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Amount
-              </label>
-
-              <input
-                required
-                type="number"
-                min="1"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="250.00"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-3xl font-black outline-none transition focus:border-[#062B8C] focus:bg-white"
-              />
-            </div>
-
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Beneficiary IBAN
-              </label>
-
-              <input
-                required
-                value={beneficiaryIban}
-                onChange={(e) => setBeneficiaryIban(e.target.value)}
-                placeholder="FR76..."
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
-              />
-
-              <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm">
-                {checkingIban ? (
-                  <p className="font-bold text-slate-500">
-                    Checking IBAN...
-                  </p>
-                ) : ibanStatus?.found ? (
-                  <div>
-                    <p className="font-black text-emerald-700">
-                      Fluido Credit beneficiary detected
-                    </p>
-                    <p className="mt-1 text-slate-500">
-                      {ibanStatus.beneficiaryName} · {ibanStatus.maskedEmail}
-                    </p>
-                  </div>
-                ) : cleanIban ? (
-                  <p className="font-bold text-slate-500">
-                    External bank beneficiary
-                  </p>
-                ) : (
-                  <p className="font-bold text-slate-400">
-                    Enter an IBAN to verify the beneficiary.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-2">
+      <section className="w-full px-4 py-6 md:px-8">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#06183A] via-[#062B8C] to-[#0B5FFF] p-6 text-white shadow-xl md:p-8">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div>
+                <p className="text-sm font-black uppercase tracking-widest text-blue-100">
+                  Fluido Credit Internal Transfer
+                </p>
+
+                <h1 className="mt-3 text-3xl font-black md:text-5xl">
+                  Send Money Instantly
+                </h1>
+
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100 md:text-base">
+                  Send funds instantly to another Fluido Credit account using
+                  the beneficiary IBAN. The receiver is identified automatically.
+                </p>
+              </div>
+
+              <Link
+                href="/transactions"
+                className="rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-[#062B8C]"
+              >
+                View Transactions
+              </Link>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-bold text-blue-100">Transfer type</p>
+                <p className="mt-2 text-xl font-black">Internal Fluido</p>
+              </div>
+
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-bold text-blue-100">Processing</p>
+                <p className="mt-2 text-xl font-black">Instant</p>
+              </div>
+
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-bold text-blue-100">Approval</p>
+                <p className="mt-2 text-xl font-black">No admin review</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+            <form
+              onSubmit={submitTransfer}
+              className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-8"
+            >
+              <h2 className="text-xl font-black text-[#06183A]">
+                Transfer Details
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Enter a valid Fluido Credit IBAN. The beneficiary name and
+                protected email will appear automatically before confirmation.
+              </p>
+
+              {error && (
+                <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {message && (
+                <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                  {message}
+                </div>
+              )}
+
+              <div className="mt-6 rounded-[2rem] border border-[#062B8C] bg-blue-50 p-5">
+                <p className="text-lg font-black text-[#06183A]">
+                  Internal Fluido Credit Transfer
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  Funds are credited immediately to the receiver account after
+                  confirmation.
+                </p>
+              </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-bold text-slate-600">
+                  Amount
+                </label>
+
+                <input
+                  required
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="250.00"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-3xl font-black outline-none transition focus:border-[#062B8C] focus:bg-white"
+                />
+              </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-bold text-slate-600">
+                  Beneficiary Fluido IBAN
+                </label>
+
+                <input
+                  required
+                  value={beneficiaryIban}
+                  onChange={(e) => setBeneficiaryIban(e.target.value)}
+                  placeholder="FR76..."
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
+                />
+
+                <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm">
+                  {checkingIban ? (
+                    <p className="font-bold text-slate-500">
+                      Checking Fluido IBAN...
+                    </p>
+                  ) : ibanStatus?.found ? (
+                    <div>
+                      <p className="font-black text-emerald-700">
+                        Fluido Credit beneficiary detected
+                      </p>
+                      <p className="mt-1 text-slate-500">
+                        {ibanStatus.beneficiaryName} · {ibanStatus.maskedEmail}
+                      </p>
+                    </div>
+                  ) : cleanIban ? (
+                    <p className="font-bold text-red-600">
+                      This IBAN was not found as a Fluido Credit account.
+                    </p>
+                  ) : (
+                    <p className="font-bold text-slate-400">
+                      Enter a Fluido Credit IBAN to identify the beneficiary.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6">
                 <label className="text-sm font-bold text-slate-600">
                   Beneficiary name
                 </label>
 
                 <input
                   required
+                  readOnly={beneficiaryDetected}
                   value={beneficiaryName}
                   onChange={(e) => setBeneficiaryName(e.target.value)}
-                  placeholder="Beneficiary full name"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
+                  placeholder="Detected automatically from IBAN"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white read-only:cursor-not-allowed read-only:bg-slate-100"
                 />
               </div>
 
-              <div>
+              <div className="mt-6">
                 <label className="text-sm font-bold text-slate-600">
-                  BIC / SWIFT
+                  Payment reference / reason
                 </label>
 
-                <input
-                  value={beneficiaryBic}
-                  onChange={(e) =>
-                    setBeneficiaryBic(e.target.value.toUpperCase())
-                  }
-                  placeholder="Optional"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Family support, invoice, personal transfer..."
+                  className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
                 />
               </div>
-            </div>
 
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Payment reference / reason
-              </label>
+              <div className="mt-6 rounded-2xl bg-slate-50 p-5">
+                <label className="flex gap-3 text-sm font-semibold text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={accepted}
+                    onChange={(e) => setAccepted(e.target.checked)}
+                    className="mt-1"
+                  />
 
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Rent payment, invoice, family support..."
-                className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
-              />
-            </div>
+                  <span>
+                    I confirm that the Fluido Credit beneficiary details are
+                    correct and I authorize this instant internal transfer.
+                  </span>
+                </label>
+              </div>
 
-            <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-              <label className="flex gap-3 text-sm font-semibold text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={accepted}
-                  onChange={(e) => setAccepted(e.target.checked)}
-                  className="mt-1"
-                />
+              <button
+                disabled={loading || !beneficiaryDetected}
+                type="submit"
+                className="mt-6 w-full rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f66] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Sending money..." : "Send Money Instantly"}
+              </button>
+            </form>
 
-                <span>
-                  I confirm that the beneficiary details are correct and I
-                  authorize Fluido Credit to execute this transfer.
-                </span>
-              </label>
-            </div>
+            <aside className="space-y-6">
+              <div className="rounded-[2rem] bg-[#06183A] p-6 text-white shadow-xl">
+                <p className="text-sm font-bold text-blue-100">
+                  Transfer Summary
+                </p>
 
-            <button
-              disabled={loading}
-              type="submit"
-              className="mt-6 w-full rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f66] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {loading ? "Processing transfer..." : "Confirm Transfer"}
-            </button>
-          </form>
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <p className="text-sm text-blue-100">Amount</p>
+                    <p className="mt-1 text-3xl font-black">
+                      {formatEuro(numericAmount)}
+                    </p>
+                  </div>
 
-          <aside className="space-y-6">
-            <div className="rounded-[2rem] bg-[#06183A] p-6 text-white shadow-xl">
-              <p className="text-sm font-bold text-blue-100">
-                Transfer Summary
-              </p>
+                  <div className="rounded-2xl bg-white/10 p-4">
+                    <p className="text-xs text-blue-100">Beneficiary</p>
+                    <p className="mt-2 font-black">
+                      {beneficiaryName || "Not detected"}
+                    </p>
+                  </div>
 
-              <div className="mt-6 space-y-5">
-                <div>
-                  <p className="text-sm text-blue-100">Destination</p>
-                  <p className="mt-1 text-xl font-black">
-                    {transferType === "FLUIDO"
-                      ? "Fluido Credit account"
-                      : "External bank account"}
-                  </p>
+                  <div className="rounded-2xl bg-white/10 p-4">
+                    <p className="text-xs text-blue-100">IBAN status</p>
+                    <p className="mt-2 font-black">
+                      {beneficiaryDetected
+                        ? "Verified Fluido account"
+                        : "Waiting for verification"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white/10 p-4">
+                    <p className="text-xs text-blue-100">Processing</p>
+                    <p className="mt-2 font-black">
+                      Instant credit to receiver
+                    </p>
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <p className="text-sm text-blue-100">Amount</p>
-                  <p className="mt-1 text-3xl font-black">
-                    {formatEuro(numericAmount)}
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-black text-[#06183A]">
+                  Security Rules
+                </h2>
+
+                <div className="mt-5 space-y-3 text-sm text-slate-600">
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    Only Fluido Credit IBANs are accepted on this page.
                   </p>
-                </div>
 
-                <div className="rounded-2xl bg-white/10 p-4">
-                  <p className="text-xs text-blue-100">Beneficiary</p>
-                  <p className="mt-2 font-black">
-                    {beneficiaryName || "Not entered"}
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    The receiver is detected automatically before confirmation.
                   </p>
-                </div>
 
-                <div className="rounded-2xl bg-white/10 p-4">
-                  <p className="text-xs text-blue-100">Processing</p>
-                  <p className="mt-2 font-black">
-                    {transferType === "FLUIDO"
-                      ? "Instant internal transfer"
-                      : "External bank review"}
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    The sender and receiver receive email confirmation after the
+                    transfer.
+                  </p>
+
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    The transfer is completed immediately with no admin review.
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-[#06183A]">
-                Security checks
-              </h2>
-
-              <div className="mt-5 space-y-3 text-sm text-slate-600">
-                <p className="rounded-2xl bg-slate-50 p-4">
-                  Internal beneficiaries are detected automatically by IBAN.
-                </p>
-
-                <p className="rounded-2xl bg-slate-50 p-4">
-                  The beneficiary receives an email when the transfer is
-                  completed.
-                </p>
-
-                <p className="rounded-2xl bg-slate-50 p-4">
-                  External bank transfers may require admin review before final
-                  execution.
-                </p>
-              </div>
-            </div>
-          </aside>
+            </aside>
+          </div>
         </div>
       </section>
     </AppShell>

@@ -3,13 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendDocumentDecisionCustomerEmail } from "@/lib/mail";
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fluidocredit.com";
+
 export async function POST(req: Request) {
   try {
     const admin = await requireAdmin();
     const formData = await req.formData();
 
-    const documentId = String(formData.get("documentId") || "");
-    const status = String(formData.get("status") || "");
+    const documentId = String(formData.get("documentId") || "").trim();
+    const status = String(formData.get("status") || "").trim();
     const rejectionReason = String(formData.get("rejectionReason") || "").trim();
 
     if (!documentId || !status) {
@@ -27,30 +29,20 @@ export async function POST(req: Request) {
     }
 
     const document = await prisma.document.update({
-  where: {
-    id: documentId,
-  },
-  data: {
-    status: status as "APPROVED" | "REJECTED" | "PENDING",
-
-    rejectionReason:
-      status === "REJECTED"
-        ? rejectionReason || null
-        : null,
-
-    reviewComment:
-      rejectionReason || null,
-
-    reviewedAt: new Date(),
-
-    reviewedById: admin.id,
-  },
-  include: {
-    user: true,
-    reviewedBy: true,
-    loanApplication: true,
-  },
-});
+      where: { id: documentId },
+      data: {
+        status: status as "APPROVED" | "REJECTED" | "PENDING",
+        rejectionReason: status === "REJECTED" ? rejectionReason || null : null,
+        reviewComment: rejectionReason || null,
+        reviewedAt: new Date(),
+        reviewedById: admin.id,
+      },
+      include: {
+        user: true,
+        reviewedBy: true,
+        loanApplication: true,
+      },
+    });
 
     await prisma.notification.create({
       data: {
@@ -104,7 +96,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.redirect(new URL("/admin/documents", req.url));
+    return NextResponse.redirect(`${APP_URL}/admin/documents`);
   } catch (error) {
     console.error("ADMIN_DOCUMENT_STATUS_ERROR:", error);
 

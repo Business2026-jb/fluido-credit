@@ -40,6 +40,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([isActive])
+  depositRequests DepositRequest[]
 }
 
 model EmailVerification {
@@ -298,6 +299,7 @@ model Account {
   updatedAt        DateTime      @updatedAt
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions     Transaction[]
+  depositRequests DepositRequest[]
 }
 
 model Transaction {
@@ -407,4 +409,30 @@ enum TransactionStatus {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+model DepositRequest {
+  id             String   @id @default(cuid())
+  userId         String
+  accountId      String?
+  amount         Float
+  currency       String   @default("EUR")
+  method         String
+  status         String   @default("PENDING")
+  reference      String   @unique
+  proofFileName  String?
+  proofFileUrl   String?
+  adminNote      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  reviewedAt     DateTime?
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account        Account? @relation(fields: [accountId], references: [id])
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([status])
+  @@index([method])
+  @@index([createdAt])
 }

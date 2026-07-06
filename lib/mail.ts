@@ -627,3 +627,278 @@ export async function sendAdminTransferStatusEmail(data: {
     `,
   });
 }
+
+export async function sendDepositCustomerEmail(
+  email: string,
+  fullName: string,
+  data: {
+    amount: number;
+    currency: string;
+    method: string;
+    reference: string;
+  }
+) {
+  return sendEmail({
+    to: email,
+    subject: "Your Fluido Credit deposit request has been received",
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:650px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+
+          <h2 style="margin-top:25px;">Deposit request received</h2>
+
+          <p>Hello <strong>${fullName}</strong>,</p>
+
+          <p>
+            Your deposit request has been received successfully.
+          </p>
+
+          <p>
+            Our finance department is currently verifying your payment.
+            Once the payment has been confirmed your Fluido Credit account
+            will automatically be credited.
+          </p>
+
+          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:25px 0;">
+
+            <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+
+            <p><strong>Method:</strong> ${data.method}</p>
+
+            <p><strong>Reference:</strong> ${data.reference}</p>
+
+            <p><strong>Status:</strong> Pending Verification</p>
+
+          </div>
+
+          <p>
+            Thank you for choosing Fluido Credit.
+          </p>
+
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendDepositAdminEmail(data: {
+  adminEmail: string;
+
+  customerName: string;
+
+  customerEmail: string;
+
+  customerPhone: string;
+
+  amount: number;
+
+  currency: string;
+
+  method: string;
+
+  reference: string;
+
+  proofFileName: string;
+
+  proofFileUrl: string;
+}) {
+  return sendEmail({
+    to: data.adminEmail,
+    subject: `New Deposit Request - ${data.customerName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+
+      <div style="max-width:700px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+
+      <h1 style="color:#062B8C;">Fluido Credit Admin</h1>
+
+      <h2>New customer deposit</h2>
+
+      <p>A new deposit request requires verification.</p>
+
+      <hr>
+
+      <p><strong>Customer:</strong> ${data.customerName}</p>
+
+      <p><strong>Email:</strong> ${data.customerEmail}</p>
+
+      <p><strong>Phone:</strong> ${data.customerPhone}</p>
+
+      <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+
+      <p><strong>Method:</strong> ${data.method}</p>
+
+      <p><strong>Reference:</strong> ${data.reference}</p>
+
+      <p><strong>Proof:</strong> ${data.proofFileName}</p>
+
+      <p><strong>Storage:</strong> ${data.proofFileUrl}</p>
+
+      <br>
+
+      <a href="https://fluidocredit.com/admin/deposits"
+      style="display:inline-block;background:#062B8C;color:white;padding:14px 22px;border-radius:12px;text-decoration:none;font-weight:bold;">
+
+      Review Deposit
+
+      </a>
+
+      </div>
+
+      </div>
+    `,
+  });
+}
+
+export async function sendDepositApprovedEmail(
+  email: string,
+  fullName: string,
+  data:{
+    amount:number;
+    currency:string;
+    method:string;
+    reference:string;
+  }
+){
+return sendEmail({
+
+to:email,
+
+subject:"Your Fluido Credit deposit has been approved",
+
+html:`
+
+<div style="font-family:Arial;background:#f4f7fb;padding:32px;">
+
+<div style="max-width:650px;margin:auto;background:white;padding:32px;border-radius:24px;">
+
+<h1 style="color:#062B8C;">Fluido Credit</h1>
+
+<h2>Deposit Approved</h2>
+
+<p>Hello <strong>${fullName}</strong>,</p>
+
+<p>
+
+Good news!
+
+</p>
+
+<p>
+
+We have successfully received your payment.
+
+</p>
+
+<p>
+
+Your Fluido Credit balance has now been credited.
+
+</p>
+
+<div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
+
+<p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+
+<p><strong>Method:</strong> ${data.method}</p>
+
+<p><strong>Reference:</strong> ${data.reference}</p>
+
+<p><strong>Status:</strong> Completed</p>
+
+</div>
+
+</div>
+
+</div>
+
+`
+
+});
+
+}
+
+export async function sendDepositRejectedEmail(
+email:string,
+fullName:string,
+data:{
+
+amount:number;
+
+currency:string;
+
+method:string;
+
+reference:string;
+
+reason:string;
+
+}){
+
+return sendEmail({
+
+to:email,
+
+subject:"Fluido Credit - Deposit could not be confirmed",
+
+html:`
+
+<div style="font-family:Arial;background:#f4f7fb;padding:32px;">
+
+<div style="max-width:650px;margin:auto;background:white;padding:32px;border-radius:24px;">
+
+<h1 style="color:#C62828;">Fluido Credit</h1>
+
+<h2>Deposit Not Confirmed</h2>
+
+<p>Hello <strong>${fullName}</strong>,</p>
+
+<p>
+
+Unfortunately we were unable to validate your deposit request.
+
+</p>
+
+<p>
+
+Our finance department did not receive the corresponding payment for this deposit request.
+
+</p>
+
+<p>
+
+For this reason your deposit request has been rejected.
+
+</p>
+
+<div style="background:#fff4f4;border-radius:18px;padding:22px;margin:24px 0;">
+
+<p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
+
+<p><strong>Method:</strong> ${data.method}</p>
+
+<p><strong>Reference:</strong> ${data.reference}</p>
+
+<p><strong>Status:</strong> Rejected</p>
+
+<p><strong>Reason:</strong> ${data.reason}</p>
+
+</div>
+
+<p>
+
+If you believe this decision is incorrect, please contact Fluido Credit Support and provide your payment receipt together with your deposit reference.
+
+</p>
+
+</div>
+
+</div>
+
+`
+
+});
+
+}

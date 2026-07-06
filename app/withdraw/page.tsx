@@ -1,15 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import AppShell from "@/components/app/AppShell";
-
-type IbanResolution = {
-  found: boolean;
-  type: "FLUIDO" | "EXTERNAL";
-  beneficiaryName?: string;
-  maskedEmail?: string;
-};
 
 const formatEuro = (value: number) =>
   new Intl.NumberFormat("en-IE", {
@@ -24,73 +17,27 @@ function cleanIbanValue(value: string) {
 
 export default function WithdrawPage() {
   const [amount, setAmount] = useState("");
-  const [transferType, setTransferType] = useState<"FLUIDO" | "BANK">("BANK");
-
   const [destinationName, setDestinationName] = useState("");
+  const [destinationEmail, setDestinationEmail] = useState("");
   const [destinationIban, setDestinationIban] = useState("");
   const [destinationBic, setDestinationBic] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankCountry, setBankCountry] = useState("");
   const [description, setDescription] = useState("");
   const [accepted, setAccepted] = useState(false);
-
-  const [ibanStatus, setIbanStatus] = useState<IbanResolution | null>(null);
-  const [checkingIban, setCheckingIban] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const numericAmount = Number(amount || 0);
-  const cleanIban = useMemo(() => cleanIbanValue(destinationIban), [destinationIban]);
-
-  const fee = useMemo(() => {
-    if (!numericAmount) return 0;
-    return transferType === "FLUIDO" ? 0 : 1.5;
-  }, [numericAmount, transferType]);
-
+  const fee = numericAmount > 0 ? 1.5 : 0;
   const totalDebited = numericAmount + fee;
 
-  const method =
-    transferType === "FLUIDO"
-      ? "Fluido Credit internal transfer"
-      : "SEPA bank transfer";
-
-  useEffect(() => {
-    async function resolveIban() {
-      setIbanStatus(null);
-
-      if (cleanIban.length < 12) return;
-
-      setCheckingIban(true);
-
-      try {
-        const res = await fetch("/api/accounts/resolve-iban", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ iban: cleanIban }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          setIbanStatus(data);
-
-          if (data.found && data.beneficiaryName) {
-            setDestinationName(data.beneficiaryName);
-            setTransferType("FLUIDO");
-          } else {
-            setTransferType("BANK");
-          }
-        }
-      } catch {
-        setIbanStatus(null);
-      } finally {
-        setCheckingIban(false);
-      }
-    }
-
-    const timer = setTimeout(resolveIban, 600);
-    return () => clearTimeout(timer);
-  }, [cleanIban]);
+  const cleanIban = useMemo(
+    () => cleanIbanValue(destinationIban),
+    [destinationIban]
+  );
 
   async function submitWithdrawal(e: React.FormEvent) {
     e.preventDefault();
@@ -113,6 +60,21 @@ export default function WithdrawPage() {
       return;
     }
 
+    if (!destinationBic.trim()) {
+      setError("Please enter the beneficiary BIC / SWIFT.");
+      return;
+    }
+
+    if (!bankName.trim()) {
+      setError("Please enter the beneficiary bank name.");
+      return;
+    }
+
+    if (!bankCountry.trim()) {
+      setError("Please enter the beneficiary bank country.");
+      return;
+    }
+
     if (!accepted) {
       setError("Please confirm the withdrawal request before continuing.");
       return;
@@ -123,14 +85,23 @@ export default function WithdrawPage() {
     try {
       const res = await fetch("/api/withdraw/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           amount: numericAmount,
-          method,
+          method: "External SEPA bank withdrawal",
           destinationName,
+          destinationEmail,
           destinationIban: cleanIban,
           destinationBic,
-          description,
+          description: [
+            description,
+            bankName ? `Bank: ${bankName}` : "",
+            bankCountry ? `Bank country: ${bankCountry}` : "",
+          ]
+            .filter(Boolean)
+            .join(" | "),
         }),
       });
 
@@ -145,12 +116,13 @@ export default function WithdrawPage() {
 
       setAmount("");
       setDestinationName("");
+      setDestinationEmail("");
       setDestinationIban("");
       setDestinationBic("");
+      setBankName("");
+      setBankCountry("");
       setDescription("");
       setAccepted(false);
-      setIbanStatus(null);
-      setTransferType("BANK");
     } catch {
       setError("Unable to create withdrawal request. Please try again.");
     } finally {
@@ -160,285 +132,319 @@ export default function WithdrawPage() {
 
   return (
     <AppShell>
-      <section className="mx-auto max-w-7xl px-4 py-6 md:px-8">
-        <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#06183A] via-[#062B8C] to-[#0B5FFF] p-6 text-white shadow-xl md:p-8">
-          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-            <div>
-              <p className="text-sm font-black uppercase tracking-widest text-blue-100">
-                Secure Withdrawal
-              </p>
-
-              <h1 className="mt-3 text-3xl font-black md:text-5xl">
-                Withdraw Funds
-              </h1>
-
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
-                Send available funds securely to another Fluido Credit account
-                or to an external bank account.
-              </p>
-            </div>
-
-            <Link
-              href="/transactions"
-              className="rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-[#062B8C]"
-            >
-              View Transactions
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
-          <form
-            onSubmit={submitWithdrawal}
-            className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-8"
-          >
-            <h2 className="text-xl font-black text-[#06183A]">
-              Withdrawal Details
-            </h2>
-
-            <p className="mt-2 text-sm text-slate-500">
-              Enter the beneficiary IBAN. If it belongs to a Fluido Credit
-              customer, the beneficiary is detected automatically.
-            </p>
-
-            {error && (
-              <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
-                {error}
-              </div>
-            )}
-
-            {message && (
-              <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
-                {message}
-              </div>
-            )}
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <div
-                className={`rounded-[2rem] border p-5 ${
-                  transferType === "FLUIDO"
-                    ? "border-[#062B8C] bg-blue-50"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <p className="text-lg font-black text-[#06183A]">
-                  Fluido Credit Account
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Detected automatically when the IBAN belongs to Fluido Credit.
-                </p>
-              </div>
-
-              <div
-                className={`rounded-[2rem] border p-5 ${
-                  transferType === "BANK"
-                    ? "border-[#062B8C] bg-blue-50"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <p className="text-lg font-black text-[#06183A]">
-                  External Bank
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  SEPA withdrawal to an external beneficiary.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Amount
-              </label>
-
-              <input
-                required
-                type="number"
-                min="1"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="500.00"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-3xl font-black outline-none transition focus:border-[#062B8C] focus:bg-white"
-              />
-            </div>
-
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Beneficiary IBAN
-              </label>
-
-              <input
-                required
-                value={destinationIban}
-                onChange={(e) => setDestinationIban(e.target.value)}
-                placeholder="FR76..."
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
-              />
-
-              <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm">
-                {checkingIban ? (
-                  <p className="font-bold text-slate-500">
-                    Checking IBAN...
-                  </p>
-                ) : ibanStatus?.found ? (
-                  <div>
-                    <p className="font-black text-emerald-700">
-                      Fluido Credit beneficiary detected
-                    </p>
-                    <p className="mt-1 text-slate-500">
-                      {ibanStatus.beneficiaryName} · {ibanStatus.maskedEmail}
-                    </p>
-                  </div>
-                ) : cleanIban ? (
-                  <p className="font-bold text-slate-500">
-                    External bank beneficiary
-                  </p>
-                ) : (
-                  <p className="font-bold text-slate-400">
-                    Enter an IBAN to verify the beneficiary.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-5 md:grid-cols-2">
+      <section className="w-full px-4 py-6 md:px-8">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#06183A] via-[#062B8C] to-[#0B5FFF] p-6 text-white shadow-xl md:p-8">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div>
+                <p className="text-sm font-black uppercase tracking-widest text-blue-100">
+                  External Bank Withdrawal
+                </p>
+
+                <h1 className="mt-3 text-3xl font-black md:text-5xl">
+                  Withdraw to another bank
+                </h1>
+
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-blue-100 md:text-base">
+                  Send funds from your Fluido Credit account to an external
+                  bank account. Your request is reviewed by our admin team
+                  before final payout.
+                </p>
+              </div>
+
+              <Link
+                href="/transactions"
+                className="rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-[#062B8C]"
+              >
+                View Transactions
+              </Link>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-bold text-blue-100">Destination</p>
+                <p className="mt-2 text-xl font-black">External Bank</p>
+              </div>
+
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-bold text-blue-100">Status</p>
+                <p className="mt-2 text-xl font-black">Admin Review</p>
+              </div>
+
+              <div className="rounded-2xl bg-white/10 p-4">
+                <p className="text-xs font-bold text-blue-100">Email</p>
+                <p className="mt-2 text-xl font-black">Confirmation Sent</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
+            <form
+              onSubmit={submitWithdrawal}
+              className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-8"
+            >
+              <h2 className="text-xl font-black text-[#06183A]">
+                Beneficiary bank details
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Fill in accurate bank information to help Fluido Credit validate
+                and process your withdrawal securely.
+              </p>
+
+              {error && (
+                <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+                  {error}
+                </div>
+              )}
+
+              {message && (
+                <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                  {message}
+                </div>
+              )}
+
+              <div className="mt-6 rounded-[2rem] border border-[#062B8C] bg-blue-50 p-5">
+                <p className="text-lg font-black text-[#06183A]">
+                  External bank payout only
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  This page is dedicated to withdrawals toward external bank
+                  accounts. Fluido-to-Fluido transfers are handled from the
+                  Transfers page.
+                </p>
+              </div>
+
+              <div className="mt-6">
                 <label className="text-sm font-bold text-slate-600">
-                  Beneficiary name
+                  Amount
                 </label>
 
                 <input
                   required
-                  value={destinationName}
-                  onChange={(e) => setDestinationName(e.target.value)}
-                  placeholder="Beneficiary full name"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="500.00"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-3xl font-black outline-none transition focus:border-[#062B8C] focus:bg-white"
+                />
+              </div>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-bold text-slate-600">
+                    Beneficiary full name
+                  </label>
+
+                  <input
+                    required
+                    value={destinationName}
+                    onChange={(e) => setDestinationName(e.target.value)}
+                    placeholder="John Smith"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-slate-600">
+                    Beneficiary email
+                  </label>
+
+                  <input
+                    type="email"
+                    value={destinationEmail}
+                    onChange={(e) => setDestinationEmail(e.target.value)}
+                    placeholder="beneficiary@example.com"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-bold text-slate-600">
+                  Beneficiary IBAN
+                </label>
+
+                <input
+                  required
+                  value={destinationIban}
+                  onChange={(e) => setDestinationIban(e.target.value)}
+                  placeholder="FR76..."
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
+                />
+
+                <p className="mt-2 text-xs font-bold text-slate-400">
+                  Clean IBAN: {cleanIban || "Not entered"}
+                </p>
+              </div>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-bold text-slate-600">
+                    BIC / SWIFT
+                  </label>
+
+                  <input
+                    required
+                    value={destinationBic}
+                    onChange={(e) =>
+                      setDestinationBic(e.target.value.toUpperCase())
+                    }
+                    placeholder="BNPAFRPPXXX"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-slate-600">
+                    Beneficiary bank name
+                  </label>
+
+                  <input
+                    required
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="BNP Paribas"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-bold text-slate-600">
+                  Bank country
+                </label>
+
+                <input
+                  required
+                  value={bankCountry}
+                  onChange={(e) => setBankCountry(e.target.value)}
+                  placeholder="France"
                   className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
                 />
               </div>
 
-              <div>
+              <div className="mt-6">
                 <label className="text-sm font-bold text-slate-600">
-                  BIC / SWIFT
+                  Payment reference / reason
                 </label>
 
-                <input
-                  value={destinationBic}
-                  onChange={(e) => setDestinationBic(e.target.value.toUpperCase())}
-                  placeholder="Optional"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Invoice payment, personal withdrawal, family support..."
+                  className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
                 />
               </div>
-            </div>
 
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Description
-              </label>
+              <div className="mt-6 rounded-2xl bg-slate-50 p-5">
+                <label className="flex gap-3 text-sm font-semibold text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={accepted}
+                    onChange={(e) => setAccepted(e.target.checked)}
+                    className="mt-1"
+                  />
 
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Transfer reason..."
-                className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
-              />
-            </div>
+                  <span>
+                    I confirm that the beneficiary bank details are correct and
+                    I authorize Fluido Credit to submit this withdrawal for
+                    admin review.
+                  </span>
+                </label>
+              </div>
 
-            <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-              <label className="flex gap-3 text-sm font-semibold text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={accepted}
-                  onChange={(e) => setAccepted(e.target.checked)}
-                  className="mt-1"
-                />
+              <button
+                disabled={loading}
+                type="submit"
+                className="mt-6 w-full rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f66] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {loading ? "Submitting withdrawal..." : "Submit Withdrawal"}
+              </button>
+            </form>
 
-                <span>
-                  I confirm that the beneficiary details are correct and I
-                  authorize Fluido Credit to process this withdrawal.
-                </span>
-              </label>
-            </div>
+            <aside className="space-y-6">
+              <div className="rounded-[2rem] bg-[#06183A] p-6 text-white shadow-xl">
+                <p className="text-sm font-bold text-blue-100">
+                  Withdrawal Summary
+                </p>
 
-            <button
-              disabled={loading}
-              type="submit"
-              className="mt-6 w-full rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f66] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {loading ? "Processing withdrawal..." : "Confirm Withdrawal"}
-            </button>
-          </form>
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <p className="text-sm text-blue-100">Destination</p>
+                    <p className="mt-1 text-xl font-black">
+                      External bank account
+                    </p>
+                  </div>
 
-          <aside className="space-y-6">
-            <div className="rounded-[2rem] bg-[#06183A] p-6 text-white shadow-xl">
-              <p className="text-sm font-bold text-blue-100">
-                Withdrawal Summary
-              </p>
+                  <div>
+                    <p className="text-sm text-blue-100">Amount</p>
+                    <p className="mt-1 text-3xl font-black">
+                      {formatEuro(numericAmount)}
+                    </p>
+                  </div>
 
-              <div className="mt-6 space-y-5">
-                <div>
-                  <p className="text-sm text-blue-100">Destination</p>
-                  <p className="mt-1 text-xl font-black">
-                    {transferType === "FLUIDO"
-                      ? "Fluido Credit account"
-                      : "External bank account"}
-                  </p>
-                </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-xs text-blue-100">Fee</p>
+                      <p className="mt-2 font-black">{formatEuro(fee)}</p>
+                    </div>
 
-                <div>
-                  <p className="text-sm text-blue-100">Amount</p>
-                  <p className="mt-1 text-3xl font-black">
-                    {formatEuro(numericAmount)}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-xs text-blue-100">Fee</p>
-                    <p className="mt-2 font-black">{formatEuro(fee)}</p>
+                    <div className="rounded-2xl bg-white/10 p-4">
+                      <p className="text-xs text-blue-100">Total debited</p>
+                      <p className="mt-2 font-black">
+                        {formatEuro(totalDebited)}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-xs text-blue-100">Total debited</p>
+                    <p className="text-xs text-blue-100">Processing</p>
                     <p className="mt-2 font-black">
-                      {formatEuro(totalDebited)}
+                      Admin review before payout
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-white/10 p-4">
+                    <p className="text-xs text-blue-100">Bank</p>
+                    <p className="mt-2 font-black">
+                      {bankName || "Not entered"}
                     </p>
                   </div>
                 </div>
+              </div>
 
-                <div className="rounded-2xl bg-white/10 p-4">
-                  <p className="text-xs text-blue-100">Processing</p>
-                  <p className="mt-2 font-black">
-                    {transferType === "FLUIDO"
-                      ? "Internal beneficiary detected"
-                      : "External bank review"}
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-black text-[#06183A]">
+                  Validation rules
+                </h2>
+
+                <div className="mt-5 space-y-3 text-sm text-slate-600">
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    Withdrawals are reviewed by Fluido Credit admin before final
+                    execution.
+                  </p>
+
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    The sender receives an email confirmation immediately after
+                    submission.
+                  </p>
+
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    If a beneficiary email is provided, the beneficiary also
+                    receives a processing notification.
+                  </p>
+
+                  <p className="rounded-2xl bg-slate-50 p-4">
+                    Failed or cancelled withdrawals are automatically refunded
+                    to the sender account by admin action.
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-black text-[#06183A]">
-                Security checks
-              </h2>
-
-              <div className="mt-5 space-y-3 text-sm text-slate-600">
-                <p className="rounded-2xl bg-slate-50 p-4">
-                  Internal Fluido beneficiaries are detected automatically by
-                  IBAN.
-                </p>
-
-                <p className="rounded-2xl bg-slate-50 p-4">
-                  Sender, admin and internal beneficiary confirmations are sent
-                  automatically by email.
-                </p>
-
-                <p className="rounded-2xl bg-slate-50 p-4">
-                  External withdrawals may require compliance review before
-                  final execution.
-                </p>
-              </div>
-            </div>
-          </aside>
+            </aside>
+          </div>
         </div>
       </section>
     </AppShell>
