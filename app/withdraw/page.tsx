@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/app/AppShell";
+
+type IbanResolution = {
+  found: boolean;
+  type: "FLUIDO" | "EXTERNAL";
+  beneficiaryName?: string;
+  maskedEmail?: string;
+};
 
 const formatEuro = (value: number) =>
   new Intl.NumberFormat("en-IE", {
@@ -11,21 +18,29 @@ const formatEuro = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value || 0);
 
+function cleanIbanValue(value: string) {
+  return value.replace(/\s+/g, "").toUpperCase().trim();
+}
+
 export default function WithdrawPage() {
   const [amount, setAmount] = useState("");
   const [transferType, setTransferType] = useState<"FLUIDO" | "BANK">("BANK");
+
   const [destinationName, setDestinationName] = useState("");
-  const [destinationEmail, setDestinationEmail] = useState("");
   const [destinationIban, setDestinationIban] = useState("");
   const [destinationBic, setDestinationBic] = useState("");
   const [description, setDescription] = useState("");
   const [accepted, setAccepted] = useState(false);
+
+  const [ibanStatus, setIbanStatus] = useState<IbanResolution | null>(null);
+  const [checkingIban, setCheckingIban] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const numericAmount = Number(amount || 0);
+  const cleanIban = useMemo(() => cleanIbanValue(destinationIban), [destinationIban]);
 
   const fee = useMemo(() => {
     if (!numericAmount) return 0;
@@ -39,6 +54,44 @@ export default function WithdrawPage() {
       ? "Fluido Credit internal transfer"
       : "SEPA bank transfer";
 
+  useEffect(() => {
+    async function resolveIban() {
+      setIbanStatus(null);
+
+      if (cleanIban.length < 12) return;
+
+      setCheckingIban(true);
+
+      try {
+        const res = await fetch("/api/accounts/resolve-iban", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ iban: cleanIban }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setIbanStatus(data);
+
+          if (data.found && data.beneficiaryName) {
+            setDestinationName(data.beneficiaryName);
+            setTransferType("FLUIDO");
+          } else {
+            setTransferType("BANK");
+          }
+        }
+      } catch {
+        setIbanStatus(null);
+      } finally {
+        setCheckingIban(false);
+      }
+    }
+
+    const timer = setTimeout(resolveIban, 600);
+    return () => clearTimeout(timer);
+  }, [cleanIban]);
+
   async function submitWithdrawal(e: React.FormEvent) {
     e.preventDefault();
 
@@ -47,6 +100,16 @@ export default function WithdrawPage() {
 
     if (numericAmount <= 0) {
       setError("Please enter a valid withdrawal amount.");
+      return;
+    }
+
+    if (!destinationName.trim()) {
+      setError("Please enter the beneficiary name.");
+      return;
+    }
+
+    if (!cleanIban) {
+      setError("Please enter the beneficiary IBAN.");
       return;
     }
 
@@ -60,15 +123,12 @@ export default function WithdrawPage() {
     try {
       const res = await fetch("/api/withdraw/create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: numericAmount,
           method,
           destinationName,
-          destinationEmail,
-          destinationIban,
+          destinationIban: cleanIban,
           destinationBic,
           description,
         }),
@@ -85,11 +145,12 @@ export default function WithdrawPage() {
 
       setAmount("");
       setDestinationName("");
-      setDestinationEmail("");
       setDestinationIban("");
       setDestinationBic("");
       setDescription("");
       setAccepted(false);
+      setIbanStatus(null);
+      setTransferType("BANK");
     } catch {
       setError("Unable to create withdrawal request. Please try again.");
     } finally {
@@ -100,28 +161,30 @@ export default function WithdrawPage() {
   return (
     <AppShell>
       <section className="mx-auto max-w-7xl px-4 py-6 md:px-8">
-        <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-widest text-[#062B8C]">
-              Secure Withdrawal
-            </p>
+        <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#06183A] via-[#062B8C] to-[#0B5FFF] p-6 text-white shadow-xl md:p-8">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+            <div>
+              <p className="text-sm font-black uppercase tracking-widest text-blue-100">
+                Secure Withdrawal
+              </p>
 
-            <h1 className="mt-2 text-3xl font-black text-[#06183A] md:text-4xl">
-              Withdraw Funds
-            </h1>
+              <h1 className="mt-3 text-3xl font-black md:text-5xl">
+                Withdraw Funds
+              </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Transfer available funds to another Fluido Credit account or to an
-              external bank account.
-            </p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100">
+                Send available funds securely to another Fluido Credit account
+                or to an external bank account.
+              </p>
+            </div>
+
+            <Link
+              href="/transactions"
+              className="rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-[#062B8C]"
+            >
+              View Transactions
+            </Link>
           </div>
-
-          <Link
-            href="/transactions"
-            className="rounded-2xl border border-slate-300 bg-white px-5 py-3 text-center text-sm font-black text-[#06183A]"
-          >
-            View Transactions
-          </Link>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
@@ -134,7 +197,8 @@ export default function WithdrawPage() {
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              Choose where you want to send your funds.
+              Enter the beneficiary IBAN. If it belongs to a Fluido Credit
+              customer, the beneficiary is detected automatically.
             </p>
 
             {error && (
@@ -150,10 +214,8 @@ export default function WithdrawPage() {
             )}
 
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setTransferType("FLUIDO")}
-                className={`rounded-[2rem] border p-5 text-left transition ${
+              <div
+                className={`rounded-[2rem] border p-5 ${
                   transferType === "FLUIDO"
                     ? "border-[#062B8C] bg-blue-50"
                     : "border-slate-200 bg-white"
@@ -163,14 +225,12 @@ export default function WithdrawPage() {
                   Fluido Credit Account
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Transfer to another Fluido Credit customer.
+                  Detected automatically when the IBAN belongs to Fluido Credit.
                 </p>
-              </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setTransferType("BANK")}
-                className={`rounded-[2rem] border p-5 text-left transition ${
+              <div
+                className={`rounded-[2rem] border p-5 ${
                   transferType === "BANK"
                     ? "border-[#062B8C] bg-blue-50"
                     : "border-slate-200 bg-white"
@@ -180,9 +240,9 @@ export default function WithdrawPage() {
                   External Bank
                 </p>
                 <p className="mt-2 text-sm text-slate-500">
-                  Send money to a SEPA bank account.
+                  SEPA withdrawal to an external beneficiary.
                 </p>
-              </button>
+              </div>
             </div>
 
             <div className="mt-6">
@@ -198,97 +258,77 @@ export default function WithdrawPage() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="500.00"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-3xl font-black outline-none"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-3xl font-black outline-none transition focus:border-[#062B8C] focus:bg-white"
               />
             </div>
 
             <div className="mt-6">
               <label className="text-sm font-bold text-slate-600">
-                Beneficiary name
+                Beneficiary IBAN
               </label>
 
               <input
                 required
-                value={destinationName}
-                onChange={(e) => setDestinationName(e.target.value)}
-                placeholder={
-                  transferType === "FLUIDO"
-                    ? "Fluido customer full name"
-                    : "Bank account holder name"
-                }
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none"
-              />
-            </div>
-
-            <div className="mt-6">
-              <label className="text-sm font-bold text-slate-600">
-                Beneficiary email
-              </label>
-
-              <input
-                type="email"
-                value={destinationEmail}
-                onChange={(e) => setDestinationEmail(e.target.value)}
-                placeholder="beneficiary@example.com"
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none"
+                value={destinationIban}
+                onChange={(e) => setDestinationIban(e.target.value)}
+                placeholder="FR76..."
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
               />
 
-              <p className="mt-2 text-xs text-slate-400">
-                Optional. If provided, the beneficiary will receive a
-                confirmation email.
-              </p>
+              <div className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm">
+                {checkingIban ? (
+                  <p className="font-bold text-slate-500">
+                    Checking IBAN...
+                  </p>
+                ) : ibanStatus?.found ? (
+                  <div>
+                    <p className="font-black text-emerald-700">
+                      Fluido Credit beneficiary detected
+                    </p>
+                    <p className="mt-1 text-slate-500">
+                      {ibanStatus.beneficiaryName} · {ibanStatus.maskedEmail}
+                    </p>
+                  </div>
+                ) : cleanIban ? (
+                  <p className="font-bold text-slate-500">
+                    External bank beneficiary
+                  </p>
+                ) : (
+                  <p className="font-bold text-slate-400">
+                    Enter an IBAN to verify the beneficiary.
+                  </p>
+                )}
+              </div>
             </div>
 
-            {transferType === "FLUIDO" ? (
-              <div className="mt-6">
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <div>
                 <label className="text-sm font-bold text-slate-600">
-                  Fluido Credit IBAN or customer account reference
+                  Beneficiary name
                 </label>
 
                 <input
                   required
-                  value={destinationIban}
-                  onChange={(e) =>
-                    setDestinationIban(e.target.value.toUpperCase())
-                  }
-                  placeholder="FR76..."
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none"
+                  value={destinationName}
+                  onChange={(e) => setDestinationName(e.target.value)}
+                  placeholder="Beneficiary full name"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
                 />
               </div>
-            ) : (
-              <>
-                <div className="mt-6">
-                  <label className="text-sm font-bold text-slate-600">
-                    Beneficiary IBAN
-                  </label>
 
-                  <input
-                    required
-                    value={destinationIban}
-                    onChange={(e) =>
-                      setDestinationIban(e.target.value.toUpperCase())
-                    }
-                    placeholder="FR76..."
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none"
-                  />
-                </div>
+              <div>
+                <label className="text-sm font-bold text-slate-600">
+                  BIC / SWIFT
+                </label>
 
-                <div className="mt-6">
-                  <label className="text-sm font-bold text-slate-600">
-                    Beneficiary BIC / SWIFT
-                  </label>
-
-                  <input
-                    value={destinationBic}
-                    onChange={(e) =>
-                      setDestinationBic(e.target.value.toUpperCase())
-                    }
-                    placeholder="Optional"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none"
-                  />
-                </div>
-              </>
-            )}
+                <input
+                  value={destinationBic}
+                  onChange={(e) => setDestinationBic(e.target.value.toUpperCase())}
+                  placeholder="Optional"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold uppercase outline-none transition focus:border-[#062B8C] focus:bg-white"
+                />
+              </div>
+            </div>
 
             <div className="mt-6">
               <label className="text-sm font-bold text-slate-600">
@@ -299,7 +339,7 @@ export default function WithdrawPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Transfer reason..."
-                className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none"
+                className="mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
               />
             </div>
 
@@ -311,6 +351,7 @@ export default function WithdrawPage() {
                   onChange={(e) => setAccepted(e.target.checked)}
                   className="mt-1"
                 />
+
                 <span>
                   I confirm that the beneficiary details are correct and I
                   authorize Fluido Credit to process this withdrawal.
@@ -321,7 +362,7 @@ export default function WithdrawPage() {
             <button
               disabled={loading}
               type="submit"
-              className="mt-6 w-full rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 disabled:opacity-70"
+              className="mt-6 w-full rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f66] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? "Processing withdrawal..." : "Confirm Withdrawal"}
             </button>
@@ -330,7 +371,7 @@ export default function WithdrawPage() {
           <aside className="space-y-6">
             <div className="rounded-[2rem] bg-[#06183A] p-6 text-white shadow-xl">
               <p className="text-sm font-bold text-blue-100">
-                Withdrawal summary
+                Withdrawal Summary
               </p>
 
               <div className="mt-6 space-y-5">
@@ -368,8 +409,8 @@ export default function WithdrawPage() {
                   <p className="text-xs text-blue-100">Processing</p>
                   <p className="mt-2 font-black">
                     {transferType === "FLUIDO"
-                      ? "Instant internal review"
-                      : "SEPA payout review"}
+                      ? "Internal beneficiary detected"
+                      : "External bank review"}
                   </p>
                 </div>
               </div>
@@ -382,16 +423,18 @@ export default function WithdrawPage() {
 
               <div className="mt-5 space-y-3 text-sm text-slate-600">
                 <p className="rounded-2xl bg-slate-50 p-4">
-                  The requested amount must be available in your account before
-                  processing.
+                  Internal Fluido beneficiaries are detected automatically by
+                  IBAN.
                 </p>
 
                 <p className="rounded-2xl bg-slate-50 p-4">
-                  External bank transfers may require manual compliance review.
+                  Sender, admin and internal beneficiary confirmations are sent
+                  automatically by email.
                 </p>
 
                 <p className="rounded-2xl bg-slate-50 p-4">
-                  Beneficiary details must match the account owner information.
+                  External withdrawals may require compliance review before
+                  final execution.
                 </p>
               </div>
             </div>

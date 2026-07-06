@@ -627,36 +627,3 @@ export async function sendAdminTransferStatusEmail(data: {
     `,
   });
 }
-
-export async function sendWithdrawalBeneficiaryEmail(data: {
-  email: string;
-  beneficiaryName: string;
-  senderName: string;
-  amount: number;
-  currency: string;
-  reference: string;
-}) {
-  return sendEmail({
-    to: data.email,
-    subject: "Incoming Fluido Credit transfer notification",
-    html: `
-      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
-        <div style="max-width:620px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
-          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
-          <h2>Incoming transfer notification</h2>
-
-          <p>Hello <strong>${data.beneficiaryName}</strong>,</p>
-          <p>A transfer has been initiated in your favour by <strong>${data.senderName}</strong>.</p>
-
-          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
-            <p><strong>Amount:</strong> ${data.amount} ${data.currency}</p>
-            <p><strong>Reference:</strong> ${data.reference}</p>
-            <p><strong>Status:</strong> Processing</p>
-          </div>
-
-          <p>The transfer is being reviewed and processed securely.</p>
-        </div>
-      </div>
-    `,
-  });
-}
