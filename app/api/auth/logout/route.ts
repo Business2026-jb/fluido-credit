@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE_NAME } from "@/lib/auth";
 
+const APP_URL = "https://fluidocredit.com";
+
 async function logout(req: Request, redirectToLogin = false) {
   const token = req.headers
     .get("cookie")
@@ -11,13 +13,17 @@ async function logout(req: Request, redirectToLogin = false) {
 
   if (token) {
     await prisma.session.deleteMany({
-      where: { token },
+      where: {
+        token,
+      },
     });
   }
 
   const response = redirectToLogin
-    ? NextResponse.redirect(new URL("/login", req.url))
-    : NextResponse.json({ message: "Logged out." });
+    ? NextResponse.redirect(`${APP_URL}/login`)
+    : NextResponse.json({
+        message: "Logged out.",
+      });
 
   response.cookies.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
