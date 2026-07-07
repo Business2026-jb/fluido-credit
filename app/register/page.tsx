@@ -43,6 +43,11 @@ export default function RegisterPage() {
   const [loadingCountry, setLoadingCountry] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [emailStatus, setEmailStatus] = useState<
+  "idle" | "checking" | "available" | "taken"
+>("idle");
+
+const [creatingStep, setCreatingStep] = useState("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -83,6 +88,35 @@ export default function RegisterPage() {
 
     detectCountry();
   }, []);
+
+  useEffect(() => {
+  const email = form.email.toLowerCase().trim();
+
+  if (!email || !email.includes("@")) {
+    setEmailStatus("idle");
+    return;
+  }
+
+  const timer = setTimeout(async () => {
+    try {
+      setEmailStatus("checking");
+
+      const res = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      setEmailStatus(data.available ? "available" : "taken");
+    } catch {
+      setEmailStatus("idle");
+    }
+  }, 700);
+
+  return () => clearTimeout(timer);
+}, [form.email]);
 
   const passwordScore = useMemo(() => {
     let score = 0;
@@ -198,11 +232,21 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
-    localStorage.setItem("fluido_register_email", data.email);
+    setCreatingStep("Creating secure customer profile...");
 
-    setTimeout(() => {
-      window.location.href = "/verify-email";
-    }, 1200);
+setTimeout(() => {
+  setCreatingStep("Sending verification email...");
+}, 700);
+
+setTimeout(() => {
+  setCreatingStep("Redirecting to email verification...");
+}, 1400);
+
+localStorage.setItem("fluido_register_email", data.email);
+
+setTimeout(() => {
+  window.location.href = "https://fluidocredit.com/verify-email";
+}, 2200);
   } catch {
     setError("Unable to create your account. Please try again.");
   } finally {
@@ -338,21 +382,38 @@ const handleSubmit = async (e: React.FormEvent) => {
               </div>
 
               <div>
-                <label className="text-sm font-bold text-slate-600">
-                  Email address
-                </label>
+  <label className="text-sm font-bold text-slate-600">
+    Email address
+  </label>
 
-                <input
-                  required
-                  type="email"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  value={form.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="john@example.com"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
-                />
+  <input
+    required
+    type="email"
+    autoComplete="email"
+    autoCapitalize="none"
+    spellCheck={false}
+    value={form.email}
+    onChange={(e) => handleChange("email", e.target.value)}
+    placeholder="john@example.com"
+    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
+  />
+
+  {emailStatus !== "idle" && (
+    <p className="mt-2 text-xs font-bold">
+      {emailStatus === "checking" && (
+        <span className="text-slate-400">Checking email...</span>
+      )}
+
+      {emailStatus === "available" && (
+        <span className="text-emerald-600">Email available</span>
+      )}
+
+      {emailStatus === "taken" && (
+        <span className="text-red-600">Email already registered</span>
+      )}
+    </p>
+  )}
+</div>
               </div>
 
               <div>
