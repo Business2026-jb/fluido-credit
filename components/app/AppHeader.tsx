@@ -19,6 +19,7 @@ import {
   FileText,
   Scale,
   LogOut,
+  Settings,
 } from "lucide-react";
 
 const navigation = [
@@ -26,16 +27,21 @@ const navigation = [
   { name: "Loans", href: "/loans/apply", icon: Landmark },
   { name: "Cards", href: "/cards", icon: CreditCard },
   { name: "Transactions", href: "/transactions", icon: ArrowLeftRight },
+  { name: "Settings", href: "/settings", icon: Settings },
   { name: "Support", href: "/support", icon: LifeBuoy },
 ];
 
 const mobileMenu = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Loans", href: "/loans/apply", icon: Landmark },
+  { name: "Cards", href: "/cards", icon: CreditCard },
+  { name: "Transactions", href: "/transactions", icon: ArrowLeftRight },
+  { name: "Settings", href: "/settings", icon: Settings },
   { name: "Support", href: "/support", icon: LifeBuoy },
-  { name: "Settings", href: "/settings", icon: LifeBuoy },
   { name: "Privacy", href: "/privacy", icon: ShieldCheck },
   { name: "Terms", href: "/terms", icon: FileText },
   { name: "Legal", href: "/legal", icon: Scale },
-  { name: "Logout", href: "/api/auth/logout", icon: LogOut },
+  { name: "Logout", href: "https://fluidocredit.com/api/auth/logout", icon: LogOut },
 ];
 
 export default function AppHeader() {
@@ -47,12 +53,12 @@ export default function AppHeader() {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 md:px-8">
         <Link href="/dashboard" className="flex items-center gap-3">
           <Image
-            src="/logo.png"
+            src="/alogo.png"
             alt="Fluido Credit"
             width={170}
             height={56}
             priority
-            className="rounded-xl"
+            className="h-12 w-auto object-contain"
           />
 
           <div className="hidden sm:block">
@@ -65,11 +71,11 @@ export default function AppHeader() {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-2 lg:flex">
+        <nav className="hidden items-center gap-2 xl:flex">
           {navigation.map((item) => {
             const Icon = item.icon;
             const active =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <Link
@@ -78,7 +84,7 @@ export default function AppHeader() {
                 className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-all ${
                   active
                     ? "bg-blue-50 text-[#062B8C]"
-                    : "text-slate-600 hover:bg-slate-100"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-[#06183A]"
                 }`}
               >
                 <Icon size={18} />
@@ -89,24 +95,41 @@ export default function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 transition hover:bg-slate-200 md:flex">
+          <button
+            type="button"
+            className="hidden h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-[#06183A] transition hover:bg-slate-200 md:flex"
+          >
             <Search size={20} />
           </button>
 
           <Link
             href="/notifications"
-            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 transition hover:bg-slate-200"
+            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-[#06183A] transition hover:bg-slate-200"
           >
             <Bell size={20} />
             <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500" />
           </Link>
 
           <Link
+            href="/settings"
+            className={`hidden items-center gap-2 rounded-2xl px-3 py-2 transition md:flex ${
+              pathname === "/settings"
+                ? "bg-blue-50 text-[#062B8C]"
+                : "bg-slate-100 text-[#06183A] hover:bg-slate-200"
+            }`}
+          >
+            <Settings size={22} />
+            <span className="hidden text-sm font-black lg:block">
+              Settings
+            </span>
+          </Link>
+
+          <Link
             href="/profile"
-            className="flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 transition hover:bg-slate-200"
+            className="flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-2 text-[#06183A] transition hover:bg-slate-200"
           >
             <UserCircle2 size={30} />
-            <span className="hidden text-sm font-black text-[#06183A] lg:block">
+            <span className="hidden text-sm font-black lg:block">
               My Profile
             </span>
           </Link>
@@ -114,7 +137,7 @@ export default function AppHeader() {
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-[#06183A] lg:hidden"
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -126,13 +149,19 @@ export default function AppHeader() {
           <div className="mx-auto max-w-7xl space-y-2">
             {mobileMenu.map((item) => {
               const Icon = item.icon;
+              const active =
+                pathname === item.href || pathname.startsWith(`${item.href}/`);
 
               return (
                 <Link
                   key={item.name}
                   href={item.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-sm font-black text-[#06183A] hover:bg-blue-50 hover:text-[#062B8C]"
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-4 text-sm font-black transition ${
+                    active
+                      ? "bg-blue-50 text-[#062B8C]"
+                      : "bg-slate-50 text-[#06183A] hover:bg-blue-50 hover:text-[#062B8C]"
+                  }`}
                 >
                   <Icon size={20} />
                   {item.name}

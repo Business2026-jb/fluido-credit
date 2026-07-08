@@ -290,7 +290,7 @@ export default function HomePage() {
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-[1500px] flex-col justify-between gap-4 px-4 py-6 text-sm text-slate-500 md:flex-row md:items-center md:px-8">
-          <p>© 2026 Fluido Credit</p>
+          <p>© 2019-2026 Fluido Credit. All rights reserved.</p>
 
           <div className="flex flex-wrap gap-4">
             <Link href="/privacy">Privacy</Link>

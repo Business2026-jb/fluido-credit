@@ -148,7 +148,7 @@ export default function AppFooter() {
 
       <div className="border-t border-slate-100">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-4 py-5 text-sm text-slate-500 md:flex-row md:px-8">
-          <p>© {year} Fluido Credit. All rights reserved.</p>
+          <p>© 2019-{year} Fluido Credit. All rights reserved.</p>
 
           <div className="flex flex-wrap gap-5">
             <Link href="/privacy" className="hover:text-[#062B8C]">
