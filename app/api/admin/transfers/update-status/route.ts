@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendEmail } from "@/lib/mail";
+import { sendPushToUser } from "@/lib/push";
 
 const APP_URL = "https://fluidocredit.com";
 
@@ -206,19 +207,17 @@ export async function POST(req: Request) {
         }
       }
     } catch (emailError) {
-      console.error("ADMIN_TRANSFER_EMAIL_ERROR:", emailError);
-    }
+  console.error("ADMIN_TRANSFER_EMAIL_ERROR:", emailError);
+}
 
-    await prisma.auditLog.create({
-      data: {
-        userId: admin.id,
-        action: `TRANSFER_${status}`,
-        entity: "Transaction",
-        entityId: transfer.id,
-      },
-    });
+await sendPushToUser({
+  userId: transfer.userId,
+  title: "Transfer update",
+  message: `Your transfer is now ${status}.`,
+  url: "/transactions",
+});
 
-    return NextResponse.redirect(`${APP_URL}/admin/transfers`);
+return NextResponse.redirect(`${APP_URL}/admin/transfers`);
   } catch (error) {
     console.error("ADMIN_TRANSFER_STATUS_ERROR:", error);
 

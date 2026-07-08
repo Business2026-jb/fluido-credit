@@ -30,10 +30,10 @@ const actions = [
     icon: ArrowRightLeft,
   },
   {
-    title: "Documents",
-    description: "Upload verification files",
-    href: "/documents",
-    icon: FileText,
+    title: "Deposit",
+    description: "Top up you account banlance",
+    href: "/deposit",
+    icon: Receipt,
   },
   {
     title: "Cards",

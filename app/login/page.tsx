@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
+  const [introLoading, setIntroLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,32 +15,81 @@ export default function LoginPage() {
     password: "",
   });
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIntroLoading(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (loading) return;
+
     setLoading(true);
     setError("");
 
     try {
+      const payload = {
+        email: form.email.toLowerCase().trim(),
+        password: form.password,
+      };
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.message || "Login failed.");
+        setLoading(false);
         return;
       }
 
-      window.location.href = "/dashboard";
+      window.location.href = "https://fluidocredit.com/dashboard";
     } catch {
       setError("Unable to sign in. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
+
+  if (introLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-white text-[#06183A]">
+        <div className="flex flex-col items-center gap-5">
+          <Image
+            src="/alogo.png"
+            alt="Fluido Credit"
+            width={130}
+            height={130}
+            priority
+            className="h-28 w-28 animate-spin object-contain"
+          />
+
+          <div className="text-center">
+            <p className="text-sm font-black uppercase tracking-[0.35em] text-[#062B8C]">
+              Fluido Credit
+            </p>
+
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Preparing secure login
+            </p>
+          </div>
+
+          <div className="mt-2 h-2 w-56 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full w-full animate-pulse rounded-full bg-[#062B8C]" />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#F5F7FB] text-[#06183A]">
@@ -68,7 +118,7 @@ export default function LoginPage() {
             </h1>
 
             <p className="mt-6 text-lg leading-8 text-blue-100">
-              Sign in to manage your account, loan applications, documents and
+              Sign in to manage your balance, loans, documents and secure
               banking activity.
             </p>
 
@@ -86,6 +136,7 @@ export default function LoginPage() {
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-[#06183A]">
                     ✓
                   </span>
+
                   <strong>{item}</strong>
                 </div>
               ))}
@@ -152,12 +203,18 @@ export default function LoginPage() {
                   <input
                     required
                     type="email"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
                     value={form.email}
                     onChange={(e) =>
-                      setForm((prev) => ({ ...prev, email: e.target.value }))
+                      setForm((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
                     }
                     placeholder="john@example.com"
-                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-blue-700 focus:bg-white"
+                    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
                   />
                 </div>
 
@@ -175,9 +232,10 @@ export default function LoginPage() {
                     </Link>
                   </div>
 
-                  <div className="mt-2 flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-blue-700 focus-within:bg-white">
+                  <div className="mt-2 flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-[#062B8C] focus-within:bg-white">
                     <input
                       required
+                      autoComplete="current-password"
                       type={showPassword ? "text" : "password"}
                       value={form.password}
                       onChange={(e) =>
@@ -193,7 +251,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="px-4 text-sm font-black text-blue-800"
+                      className="px-4 text-sm font-black text-[#062B8C]"
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>

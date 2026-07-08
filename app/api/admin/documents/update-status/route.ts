@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendDocumentDecisionCustomerEmail } from "@/lib/mail";
+import { sendPushToUser } from "@/lib/push";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fluidocredit.com";
 
@@ -79,10 +80,27 @@ export async function POST(req: Request) {
         }
       );
     } catch (emailError) {
-      console.error("DOCUMENT_DECISION_EMAIL_ERROR:", emailError);
-    }
+  console.error("DOCUMENT_DECISION_EMAIL_ERROR:", emailError);
+}
 
-    await prisma.auditLog.create({
+await sendPushToUser({
+  userId: document.userId,
+  title:
+    status === "APPROVED"
+      ? "Document approved"
+      : status === "REJECTED"
+      ? "Document rejected"
+      : "Document update",
+  message:
+    status === "APPROVED"
+      ? "Your document has been approved."
+      : status === "REJECTED"
+      ? "Your document was rejected. Please check your account."
+      : "More information is required for your document.",
+  url: "/documents",
+});
+
+await prisma.auditLog.create({
       data: {
         userId: admin.id,
         action:

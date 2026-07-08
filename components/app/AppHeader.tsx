@@ -31,6 +31,7 @@ const navigation = [
 
 const mobileMenu = [
   { name: "Support", href: "/support", icon: LifeBuoy },
+  { name: "Settings", href: "/settings", icon: LifeBuoy },
   { name: "Privacy", href: "/privacy", icon: ShieldCheck },
   { name: "Terms", href: "/terms", icon: FileText },
   { name: "Legal", href: "/legal", icon: Scale },

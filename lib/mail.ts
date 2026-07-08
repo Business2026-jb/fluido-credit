@@ -902,3 +902,173 @@ If you believe this decision is incorrect, please contact Fluido Credit Support 
 });
 
 }
+
+export async function sendPhysicalCardRequestCustomerEmail(
+  email: string,
+  fullName: string,
+  data: {
+    country: string;
+    city: string;
+    deliveryAddress: string;
+    requestId: string;
+  }
+) {
+  return sendEmail({
+    to: email,
+    subject: "Your Fluido Credit physical card request has been received",
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:650px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+          <h2>Physical card request received</h2>
+
+          <p>Hello <strong>${fullName}</strong>,</p>
+          <p>Your physical Fluido Credit VIP card request has been received.</p>
+          <p>Delivery usually takes up to <strong>2 weeks</strong> after validation.</p>
+
+          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Status:</strong> Requested</p>
+            <p><strong>Country:</strong> ${data.country}</p>
+            <p><strong>City:</strong> ${data.city}</p>
+            <p><strong>Delivery address:</strong> ${data.deliveryAddress}</p>
+            <p><strong>Request ID:</strong> ${data.requestId}</p>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendPhysicalCardRequestAdminEmail(data: {
+  adminEmail: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerCountry: string;
+  customerId: string;
+  country: string;
+  city: string;
+  deliveryAddress: string;
+  requestId: string;
+}) {
+  return sendEmail({
+    to: data.adminEmail,
+    subject: `New physical card request - ${data.customerName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:700px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit Admin</h1>
+          <h2>New physical card request</h2>
+
+          <div style="background:#f8fafc;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Customer:</strong> ${data.customerName}</p>
+            <p><strong>Email:</strong> ${data.customerEmail}</p>
+            <p><strong>Phone:</strong> ${data.customerPhone}</p>
+            <p><strong>Customer country:</strong> ${data.customerCountry}</p>
+            <p><strong>User ID:</strong> ${data.customerId}</p>
+          </div>
+
+          <div style="background:#eef5ff;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Delivery country:</strong> ${data.country}</p>
+            <p><strong>Delivery city:</strong> ${data.city}</p>
+            <p><strong>Delivery address:</strong> ${data.deliveryAddress}</p>
+            <p><strong>Request ID:</strong> ${data.requestId}</p>
+          </div>
+
+          <a href="https://fluidocredit.com/admin/cards/physical"
+            style="display:inline-block;background:#062B8C;color:white;padding:14px 22px;border-radius:14px;text-decoration:none;font-weight:bold;">
+            Review Request
+          </a>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendPhysicalCardStatusCustomerEmail(
+  email: string,
+  fullName: string,
+  data: {
+    status: string;
+    maskedNumber?: string | null;
+    country: string;
+    city: string;
+    deliveryAddress: string;
+    requestId: string;
+    adminNote?: string | null;
+  }
+) {
+  const content =
+    data.status === "IN_PRODUCTION"
+      ? {
+          subject: "Your Fluido Credit physical card is in production",
+          title: "Card in production",
+          message:
+            "Your physical Fluido Credit VIP card is now being prepared.",
+        }
+      : data.status === "SHIPPING"
+      ? {
+          subject: "Your Fluido Credit physical card is on its way",
+          title: "Card shipping",
+          message:
+            "Your physical Fluido Credit VIP card is now in delivery. Delivery usually takes up to 2 weeks.",
+        }
+      : data.status === "DELIVERED"
+      ? {
+          subject: "Your Fluido Credit physical card has arrived",
+          title: "Card delivered",
+          message:
+            "Your physical Fluido Credit VIP card has arrived at the destination address.",
+        }
+      : data.status === "ACTIVE"
+      ? {
+          subject: "Your Fluido Credit physical card is active",
+          title: "Card activated",
+          message:
+            "Your physical Fluido Credit VIP card is now active and visible from your Cards page.",
+        }
+      : {
+          subject: "Your Fluido Credit physical card has been cancelled",
+          title: "Card cancelled",
+          message:
+            "Your physical Fluido Credit VIP card request has been cancelled.",
+        };
+
+  return sendEmail({
+    to: email,
+    subject: content.subject,
+    html: `
+      <div style="font-family:Arial,sans-serif;background:#f4f7fb;padding:32px;">
+        <div style="max-width:650px;margin:auto;background:white;border-radius:24px;padding:32px;border:1px solid #e5e7eb;">
+          <h1 style="color:#062B8C;margin:0;">Fluido Credit</h1>
+          <h2>${content.title}</h2>
+
+          <p>Hello <strong>${fullName}</strong>,</p>
+          <p>${content.message}</p>
+
+          ${
+            data.adminNote
+              ? `<div style="background:#eef5ff;border-radius:18px;padding:18px;margin:24px 0;">
+                  <strong>Admin note:</strong>
+                  <p style="margin-bottom:0;">${data.adminNote}</p>
+                </div>`
+              : ""
+          }
+
+          <div style="background:#f8fafc;border-radius:18px;padding:22px;margin:24px 0;">
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Card:</strong> ${data.maskedNumber || "Physical VIP Card"}</p>
+            <p><strong>Country:</strong> ${data.country}</p>
+            <p><strong>City:</strong> ${data.city}</p>
+            <p><strong>Delivery address:</strong> ${data.deliveryAddress}</p>
+            <p><strong>Request ID:</strong> ${data.requestId}</p>
+          </div>
+
+          <p style="font-size:13px;color:#64748b;">
+            You can follow your physical card from your secure Fluido Credit Cards page.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}

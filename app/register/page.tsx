@@ -36,6 +36,8 @@ const countries = [
   { name: "Malta", code: "MT", dial: "+356", flag: "🇲🇹" },
 ];
 
+type EmailStatus = "idle" | "checking" | "available" | "taken";
+
 export default function RegisterPage() {
   const [introLoading, setIntroLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -43,11 +45,8 @@ export default function RegisterPage() {
   const [loadingCountry, setLoadingCountry] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [emailStatus, setEmailStatus] = useState<
-  "idle" | "checking" | "available" | "taken"
->("idle");
-
-const [creatingStep, setCreatingStep] = useState("");
+  const [emailStatus, setEmailStatus] = useState<EmailStatus>("idle");
+  const [creatingStep, setCreatingStep] = useState("");
 
   const [form, setForm] = useState({
     fullName: "",
@@ -74,7 +73,9 @@ const [creatingStep, setCreatingStep] = useState("");
         const data = await res.json();
 
         const detectedCountry = String(data.country_code || "").toUpperCase();
-        const found = countries.find((country) => country.code === detectedCountry);
+        const found = countries.find(
+          (country) => country.code === detectedCountry
+        );
 
         if (found) {
           setSelectedCountry(found);
@@ -90,33 +91,38 @@ const [creatingStep, setCreatingStep] = useState("");
   }, []);
 
   useEffect(() => {
-  const email = form.email.toLowerCase().trim();
+    const email = form.email.toLowerCase().trim();
 
-  if (!email || !email.includes("@")) {
-    setEmailStatus("idle");
-    return;
-  }
-
-  const timer = setTimeout(async () => {
-    try {
-      setEmailStatus("checking");
-
-      const res = await fetch("/api/auth/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-
-      setEmailStatus(data.available ? "available" : "taken");
-    } catch {
+    if (!email || !email.includes("@")) {
       setEmailStatus("idle");
+      return;
     }
-  }, 700);
 
-  return () => clearTimeout(timer);
-}, [form.email]);
+    const timer = setTimeout(async () => {
+      try {
+        setEmailStatus("checking");
+
+        const res = await fetch("/api/auth/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setEmailStatus("idle");
+          return;
+        }
+
+        setEmailStatus(data.available ? "available" : "taken");
+      } catch {
+        setEmailStatus("idle");
+      }
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [form.email]);
 
   const passwordScore = useMemo(() => {
     let score = 0;
@@ -141,6 +147,7 @@ const [creatingStep, setCreatingStep] = useState("");
 
   const handleChange = (field: string, value: string) => {
     setError("");
+    setCreatingStep("");
     setForm((prev) => ({
       ...prev,
       [field]: value,
@@ -148,39 +155,44 @@ const [creatingStep, setCreatingStep] = useState("");
   };
 
   if (introLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-white text-[#06183A]">
-        <div className="flex flex-col items-center gap-5">
-          <Image
-            src="/alogo.png"
-            alt="Fluido Credit"
-            width={130}
-            height={130}
-            priority
-            className="h-28 w-28 animate-spin object-contain"
-          />
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-white text-[#06183A]">
+      <div className="flex flex-col items-center gap-5">
+        <Image
+          src="/alogo.png"
+          alt="Fluido Credit"
+          width={130}
+          height={130}
+          priority
+          className="h-28 w-28 animate-spin object-contain"
+        />
 
-          <div className="text-center">
-            <p className="text-sm font-black uppercase tracking-[0.35em] text-[#062B8C]">
-              Fluido Credit
-            </p>
-            <p className="mt-2 text-sm font-semibold text-slate-500">
-              Opening secure banking access
-            </p>
-          </div>
+        <div className="text-center">
+          <p className="text-sm font-black uppercase tracking-[0.35em] text-[#062B8C]">
+            Fluido Credit
+          </p>
 
-          <div className="mt-2 h-2 w-56 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full w-full animate-pulse rounded-full bg-[#062B8C]" />
-          </div>
+          <p className="mt-2 text-sm font-semibold text-slate-500">
+            Preparing secure registration
+          </p>
         </div>
-      </main>
-    );
-  }
+
+        <div className="mt-2 h-2 w-56 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-full w-full animate-pulse rounded-full bg-[#062B8C]" />
+        </div>
+      </div>
+    </main>
+  );
+}
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
+
+  if (loading) return;
+
   setLoading(true);
   setError("");
+  setCreatingStep("");
 
   try {
     const normalizedEmail = form.email.toLowerCase().trim();
@@ -188,28 +200,41 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     if (!form.fullName.trim()) {
       setError("Please enter your full name.");
+      setLoading(false);
       return;
     }
 
     if (!normalizedEmail || !normalizedEmail.includes("@")) {
       setError("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    if (emailStatus === "taken") {
+      setError("This email is already registered.");
+      setLoading(false);
       return;
     }
 
     if (cleanPhone.length < 6) {
       setError("Please enter a valid phone number.");
+      setLoading(false);
       return;
     }
 
     if (!form.city.trim() || !form.address.trim() || !form.postalCode.trim()) {
       setError("Please complete your address information.");
+      setLoading(false);
       return;
     }
 
     if (form.password.length < 8 || passwordScore < 2) {
       setError("Please choose a stronger password.");
+      setLoading(false);
       return;
     }
+
+    setCreatingStep("Creating secure customer profile...");
 
     const payload = {
       ...form,
@@ -221,7 +246,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(payload),
     });
 
@@ -229,32 +256,31 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     if (!res.ok) {
       setError(data.message || "Registration failed.");
+      setCreatingStep("");
+      setLoading(false);
       return;
     }
 
-    setCreatingStep("Creating secure customer profile...");
+    localStorage.setItem("fluido_register_email", data.email);
 
-setTimeout(() => {
-  setCreatingStep("Sending verification email...");
-}, 700);
+    setTimeout(() => {
+      setCreatingStep("Sending verification email...");
+    }, 600);
 
-setTimeout(() => {
-  setCreatingStep("Redirecting to email verification...");
-}, 1400);
+    setTimeout(() => {
+      setCreatingStep("Redirecting to email verification...");
+    }, 1300);
 
-localStorage.setItem("fluido_register_email", data.email);
-
-setTimeout(() => {
-  window.location.href = "https://fluidocredit.com/verify-email";
-}, 2200);
+    setTimeout(() => {
+      window.location.href = "https://fluidocredit.com/verify-email";
+    }, 2200);
   } catch {
     setError("Unable to create your account. Please try again.");
-  } finally {
+    setCreatingStep("");
     setLoading(false);
   }
 };
-
-  return (
+return (
   <main className="min-h-screen bg-[#F5F7FB] text-[#06183A]">
     <section className="grid min-h-screen lg:grid-cols-[1fr_600px]">
       <aside className="relative hidden overflow-hidden bg-[#06183A] text-white lg:block">
@@ -291,7 +317,8 @@ setTimeout(() => {
             </h1>
 
             <p className="mt-6 max-w-lg text-lg leading-8 text-blue-100">
-              Create your secure account and access your Fluido banking space in minutes.
+              Create your secure account and access your Fluido banking space in
+              minutes.
             </p>
 
             <div className="mt-10 grid gap-4">
@@ -315,8 +342,8 @@ setTimeout(() => {
 
           <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
             <p className="text-sm leading-6 text-blue-100">
-              Fluido Credit protects your information and uses it only for account opening,
-              identity verification and financial services.
+              Fluido Credit protects your information and uses it only for
+              account opening, identity verification and financial services.
             </p>
           </div>
         </div>
@@ -355,7 +382,8 @@ setTimeout(() => {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Your country code is detected automatically. You can change it anytime.
+                Your country code is detected automatically. You can change it
+                anytime.
               </p>
             </div>
 
@@ -382,38 +410,43 @@ setTimeout(() => {
               </div>
 
               <div>
-  <label className="text-sm font-bold text-slate-600">
-    Email address
-  </label>
+                    <label className="text-sm font-bold text-slate-600">
+                  Email address
+                </label>
 
-  <input
-    required
-    type="email"
-    autoComplete="email"
-    autoCapitalize="none"
-    spellCheck={false}
-    value={form.email}
-    onChange={(e) => handleChange("email", e.target.value)}
-    placeholder="john@example.com"
-    className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
-  />
+                <input
+                  required
+                  type="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={form.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  placeholder="john@example.com"
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
+                />
 
-  {emailStatus !== "idle" && (
-    <p className="mt-2 text-xs font-bold">
-      {emailStatus === "checking" && (
-        <span className="text-slate-400">Checking email...</span>
-      )}
+                {emailStatus !== "idle" && (
+                  <p className="mt-2 text-xs font-bold">
+                    {emailStatus === "checking" && (
+                      <span className="text-slate-400">
+                        Checking email...
+                      </span>
+                    )}
 
-      {emailStatus === "available" && (
-        <span className="text-emerald-600">Email available</span>
-      )}
+                    {emailStatus === "available" && (
+                      <span className="text-emerald-600">
+                        Email available
+                      </span>
+                    )}
 
-      {emailStatus === "taken" && (
-        <span className="text-red-600">Email already registered</span>
-      )}
-    </p>
-  )}
-</div>
+                    {emailStatus === "taken" && (
+                      <span className="text-red-600">
+                        Email already registered
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -497,7 +530,9 @@ setTimeout(() => {
                     required
                     autoComplete="postal-code"
                     value={form.postalCode}
-                    onChange={(e) => handleChange("postalCode", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("postalCode", e.target.value)
+                    }
                     placeholder="75001"
                     className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-semibold outline-none transition focus:border-[#062B8C] focus:bg-white"
                   />
@@ -564,12 +599,20 @@ setTimeout(() => {
                 </p>
               </div>
 
+              {creatingStep && (
+                <div className="rounded-2xl bg-blue-50 p-4 text-sm font-bold text-[#062B8C]">
+                  {creatingStep}
+                </div>
+              )}
+
               <button
-                disabled={loading}
+                disabled={loading || emailStatus === "taken"}
                 type="submit"
                 className="flex w-full items-center justify-center rounded-2xl bg-[#062B8C] py-4 font-black text-white shadow-lg shadow-blue-900/20 transition hover:bg-[#041f68] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {loading ? "Creating your account..." : "Create my secure account"}
+                {loading
+                  ? "Creating your account..."
+                  : "Create my secure account"}
               </button>
             </form>
 

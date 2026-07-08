@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendLoanStatusCustomerEmail } from "@/lib/mail";
+import { sendPushToUser } from "@/lib/push";
 
 const VALID_STATUSES = [
   "SUBMITTED",
@@ -208,7 +209,28 @@ export async function POST(req: Request) {
   note: note || null,
 });
 
-    await prisma.auditLog.create({
+await sendPushToUser({
+  userId: result.loanUserId,
+  title:
+    status === "FUNDED"
+      ? "Loan funded"
+      : status === "APPROVED"
+      ? "Loan approved"
+      : status === "REJECTED"
+      ? "Loan not approved"
+      : "Loan update",
+  message:
+    status === "FUNDED"
+      ? "Your loan funds have been credited to your Fluido Credit account."
+      : status === "APPROVED"
+      ? "Your loan request has been approved."
+      : status === "REJECTED"
+      ? "Your loan request could not be approved at this time."
+      : `Your loan status is now ${status}.`,
+  url: "/loans",
+});
+
+await prisma.auditLog.create({
       data: {
         userId: admin.id,
         action:

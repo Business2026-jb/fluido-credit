@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendEmail } from "@/lib/mail";
+import { sendPushToUser } from "@/lib/push";
+import { sendPushToUser } from "@/lib/push";
 
 const APP_URL = "https://fluidocredit.com";
 
@@ -300,10 +302,31 @@ export async function POST(req: Request) {
         `,
       });
     } catch (emailError) {
-      console.error("DEPOSIT_STATUS_EMAIL_ERROR:", emailError);
-    }
+  console.error("DEPOSIT_STATUS_EMAIL_ERROR:", emailError);
+}
 
-    return NextResponse.redirect(`${APP_URL}/admin/deposits`);
+await sendPushToUser({
+  userId: deposit.userId,
+  title:
+    status === "COMPLETED"
+      ? "Deposit approved"
+      : status === "REJECTED"
+      ? "Deposit not confirmed"
+      : status === "CANCELLED"
+      ? "Deposit cancelled"
+      : "Deposit update",
+  message:
+    status === "COMPLETED"
+      ? "Your deposit has been approved and credited."
+      : status === "REJECTED"
+      ? "Your deposit could not be confirmed."
+      : status === "CANCELLED"
+      ? "Your deposit request has been cancelled."
+      : "Additional information is required for your deposit.",
+  url: "/notifications",
+});
+
+return NextResponse.redirect(`${APP_URL}/admin/deposits`);
   } catch (error) {
     console.error("ADMIN_DEPOSIT_STATUS_ERROR:", error);
 

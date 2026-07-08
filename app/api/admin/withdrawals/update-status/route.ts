@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendEmail } from "@/lib/mail";
+import { sendPushToUser } from "@/lib/push";
 
 const APP_URL = "https://fluidocredit.com";
 
@@ -259,6 +260,13 @@ try {
 } catch (emailError) {
   console.error("ADMIN_WITHDRAWAL_EMAIL_ERROR:", emailError);
 }
+
+await sendPushToUser({
+  userId: withdrawal.userId,
+  title: "Withdrawal update",
+  message: `Your withdrawal request is now ${status}.`,
+  url: "/transactions",
+});
 
 return NextResponse.redirect(`${APP_URL}/admin/withdrawals`);
 } catch (error) {

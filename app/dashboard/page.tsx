@@ -16,6 +16,7 @@ import RecentActivity from "@/components/dashboard/RecentActivity";
 import NeedFinancing from "@/components/dashboard/NeedFinancing";
 import MarketInsight from "@/components/dashboard/MarketInsight";
 import LoanStatusBadge from "@/components/loan/LoanStatusBadge";
+import PushNotificationButton from "@/components/app/PushNotificationButton";
 
 const formatMoney = (value: number, currency = "EUR") =>
   new Intl.NumberFormat("en-IE", {
