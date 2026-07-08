@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin";
 import { sendEmail } from "@/lib/mail";
 import { sendPushToUser } from "@/lib/push";
-import { sendPushToUser } from "@/lib/push";
 
 const APP_URL = "https://fluidocredit.com";
 
